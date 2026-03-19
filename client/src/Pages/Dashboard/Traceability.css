@@ -1,0 +1,165 @@
+/* Traceability.css */
+
+.card-container {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Auto-fit 2 per fila */
+}
+
+.card {
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff; /* Aggiungi un fondo bianco per maggiore contrasto */
+}
+
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+}
+
+h1 {
+  color: black;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h2 {
+  color: black;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+label {
+  color:black;
+  display: block;
+  margin-bottom: 10px;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="range"] {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0 10px 0;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.mixer-container.disabled {
+  opacity: 0.5; /* Rendi opaco */
+  pointer-events: none; /* Disabilita selezionabilità */
+}
+
+/* Manage Lot page*/
+.button-container {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, 1fr); /* 2 colonne */
+}
+
+.action-button {
+  padding: 10px 20px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  width: 100%; /* Bottoni larghi uguali */
+  text-align: center;
+}
+
+.action-button:hover {
+  background-color: #0056b3;
+}
+
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+  color: black;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+
+/* Modal Styles */
+.modal {
+  
+  position: fixed;
+  z-index: 1; 
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: #f9f9f9;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  width: 80%; 
+  max-width: 600px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: black;
+}
+
+.modal-header {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+
+.lot-ranges {
+  margin-top: 0.5rem;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+}
+.lot-range-group {
+  margin-bottom: 0.5rem;
+}
+
+.finish-button.disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  pointer-events: none; /* opzionale se vuoi che non risponda nemmeno al click */
+}
+
+/* Fermented */
+
+.highlight-fermented {
+  color: darkred;
+  font-weight: bold;
+}
+

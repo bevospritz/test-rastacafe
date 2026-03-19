@@ -1,0 +1,218 @@
+.gestione-appezzamenti {
+  padding: 10px; 
+  width: 100%; 
+  margin: 0 auto;
+  
+}
+
+/* Sezione della fattoria */
+.farm-section-appezzamenti {
+  top:10px;
+  /* margin-bottom: 20px;  */
+  background-color: #222222;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); 
+}
+
+/* Header della fattoria */
+.farm-header-appezzamenti {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #3e3e3e;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+/* Titolo della fattoria */
+.farm-title-appezzamenti { 
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+/* Pulsanti di azione */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* Wrapper per la tabella con scroll */
+.element-table-wrapper {
+  overflow-x: auto;
+}
+
+/* Stile della tabella */
+.element-table {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-collapse: collapse;
+}
+
+.element-table th,
+.element-table td {
+  padding: 8px;
+  text-align: left;
+  white-space: nowrap; /* Previene la rottura del testo */
+  border-right: 1px solid #797979;
+}
+
+/* Intestazione della tabella */
+.element-table th {
+  background-color: #755151;
+}
+
+/* Modal per l'inserimento degli appezzamenti */
+.modal-appezzamenti {    
+  position: fixed;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #222222;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto; 
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 998;
+}
+
+/* Overlay del modal */
+.overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Gruppi di form nel modal */
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stile delle label */
+label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+/* Input e select nei form */
+input[type="text"],
+select,
+textarea {
+  padding: 8px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* Bottone di submit */
+.submit-button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.cancel-button {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  background-color: #ff3300;
+  color: white;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Hover del bottone di submit */
+.submit-button:hover {
+  background-color: #0056b3;
+}
+
+.cancel-button:hover {
+  background-color: #aa2706;
+}
+
+/* Input Radio*/
+.custom-radio {
+  display: inline-block;
+  position: relative;
+  padding-left: 25px;
+  margin-right: 25px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Nasconde il radio button originale */
+.custom-radio input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Stile per il radio button personalizzato */
+.custom-radio label:before {  
+  content: "";
+  position: absolute;
+  top: 40%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 15px;
+  width: 15px;
+  background-color: #fff;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Stile per il radio button selezionato */
+.custom-radio input[type="radio"]:checked + label:before {
+  background-color: #007bff;
+  border-color: #dfdfdf;
+}
+
+/* Cambia colore al passaggio del mouse */
+.custom-radio label:hover:before {
+  border-color: #0056b3;
+}
+
+/* Responsive per mobile */
+@media (max-width: 768px) {
+  .fattoria-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .modal-appezzamenti {
+    top: 23%;
+    left: 30%;
+    max-width: 500px;
+    width: 40%;
+    max-height: 60vh;
+    padding: 15px;
+  }
+
+  .form-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  input[type="text"],
+  select,
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

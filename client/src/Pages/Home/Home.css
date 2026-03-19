@@ -1,0 +1,88 @@
+.Home {
+    text-align: center;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    width: 250px;
+    margin: auto;
+    margin-top: 10%;
+    color: #ffffff;
+  }
+  
+  .App-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .App-logo {
+    height: 30vmin;
+    margin-bottom: 20px;
+    pointer-events: none;
+  }
+  
+  h1 {
+    font-size: 2em;
+    margin-bottom: 30px;
+  }
+  
+  .button-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    box-shadow: solid 1px, 1px, 5px #282c34;
+  }
+  
+  .button {
+    background-color: #61dafb;
+    color: #282c34;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 3px 3px 10px #585858;
+  }
+  
+  .button:hover {
+    background-color: #21a1f1;
+    box-shadow: 0 0 10px rgba(33, 161, 241, 0.5);
+  }
+
+  .input {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 10px 0;
+    box-sizing: border-box;
+    border: 1px solid #575656;
+    border-radius: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    .Home {
+      padding: 30px;
+      width: 80%;
+    }
+  
+    h1 {
+      font-size: 1.5em;
+    }
+  
+    .App-logo {
+      height: 25vmin;
+    }
+  
+    .button-container {
+      gap: 10px;
+    }
+  
+    .button {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+  }
+  

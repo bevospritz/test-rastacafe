@@ -1,0 +1,103 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/25.0.2 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="25.0.2">
+  <diagram name="Pagina-1" id="AwHAx4njdTRuK3ehS7tA">
+    <mxGraphModel dx="1050" dy="621" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-4" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-7" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-8" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JMunjZ-dxhRzb3vav6W_-1" target="JMunjZ-dxhRzb3vav6W_-9" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-1" value="&lt;font style=&quot;font-size: 17px;&quot;&gt;DASHBOARD&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=19;" parent="1" vertex="1">
+          <mxGeometry x="60" y="30" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-3" value="1. RECAP / DASHBOARD" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="120" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-4" value="2. MANAGE USERS" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="180" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-5" value="3. MANAGE FARM" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="240" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-6" value="4. PRODUCTS" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="300" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-7" value="5. DOCUMENTS" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="360" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-8" value="6. TRACEABILITY" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="420" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-9" value="7. SHARE DATA" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="90" y="480" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-17" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;2. MANAGE USERS&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="840" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-18" value="&lt;ul&gt;&lt;li&gt;Users management (create, delete)&lt;/li&gt;&lt;li&gt;Modify users role and accessability&lt;/li&gt;&lt;li&gt;Control users activity&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;fontSize=17;spacingTop=1;spacing=2;spacingLeft=-8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="870" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-19" value="ADMIN" style="shape=rhombus;double=1;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
+          <mxGeometry x="210" y="820" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-20" value="1. RECAP" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fontSize=17;" parent="1" vertex="1">
+          <mxGeometry x="60" y="560" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-21" value="&lt;ul&gt;&lt;li&gt;Liters harvested&lt;/li&gt;&lt;li&gt;Percentage of CD/Green/Natural harvested&lt;/li&gt;&lt;li&gt;Harvest prediction and percentage harversted&lt;/li&gt;&lt;li&gt;Actual situation of the structure (ex. Secador02: drying lot #256CD since 18:35)&lt;/li&gt;&lt;li&gt;Meteo forecasts&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;fontSize=17;spacingTop=1;spacing=2;spacingLeft=-8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="590" width="320" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-22" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;3. MANAGE FARM&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1010" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-23" value="&lt;ul&gt;&lt;li&gt;Create farm&lt;/li&gt;&lt;li&gt;Add plots&lt;/li&gt;&lt;li&gt;Add structures items&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;fontSize=17;spacingTop=1;spacing=2;spacingLeft=-8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1040" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-24" value="ADMIN" style="shape=rhombus;double=1;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
+          <mxGeometry x="190" y="990" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-25" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;4. PRODUCTS&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1220" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-26" value="&lt;ul&gt;&lt;li&gt;Form for products that have been bought and used.&lt;/li&gt;&lt;li&gt;Stock&lt;/li&gt;&lt;li&gt;&lt;br&gt;&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;fontSize=17;spacingTop=1;spacing=2;spacingLeft=-8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1250" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-27" value="ADMIN" style="shape=rhombus;double=1;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
+          <mxGeometry x="170" y="1200" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-28" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;5. DOCUMENTS&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1400" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-29" value="&lt;ul&gt;&lt;li&gt;Form to upload documents&lt;/li&gt;&lt;li&gt;Date, type&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;fontSize=17;spacingTop=1;spacing=2;spacingLeft=-8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1430" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-30" value="ADMIN" style="shape=rhombus;double=1;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
+          <mxGeometry x="170" y="1380" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-31" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;6. TRACEABILITY&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1590" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JMunjZ-dxhRzb3vav6W_-32" value="&lt;ul&gt;&lt;li&gt;Core of the app&lt;/li&gt;&lt;li&gt;Manage lot by lot&amp;nbsp;&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;fontSize=17;spacingTop=1;spacing=2;spacingLeft=-8;" parent="1" vertex="1">
+          <mxGeometry x="60" y="1620" width="320" height="120" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,127 @@
+/*GestioneFattoria*/
+.gestione-fattoria-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 20px;
+  
+}
+
+.gestione-fattoria-card {
+  position: relative;
+  background-color: #222222;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 300px;
+  width: 100%;
+}
+
+.new-farm-button, .action-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin: 5px 0;
+  width: 100%;
+}
+
+.delete-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.button-container .action-button {
+  flex: 1;
+  margin: 0 5px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.submit-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.modal-fattoria{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+@media (max-width: 768px) {
+  .gestione-fattoria-card {
+    max-width: 90%;
+    padding: 15px;
+  }
+
+  .button-container {
+    flex-direction: column;
+  }
+
+  .button-container .action-button {
+    margin: 5px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .gestione-fattoria-container {
+    padding: 10px;
+  }
+
+  .gestione-fattoria-card {
+    padding: 10px;
+  }
+
+  .new-farm-button, .action-button {
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+}
+

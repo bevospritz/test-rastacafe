@@ -1,0 +1,1402 @@
+// app.js
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import sessionMiddleware from "./middleware/session.js";
+import connection from "./db.js";
+import cors from "cors";
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+import multer from "multer";
+import fs from "fs";
+import * as XLSX from "xlsx";
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+dotenv.config();
+
+// Middleware per il parsing del body delle richieste
+app.use(express.json());
+app.use(cors());
+
+// Configurazione della sessione
+app.use(sessionMiddleware);
+
+app.use((req, res, next) => {
+  if (req.session) {
+    // console.log("Session:", req.session);
+  } else {
+    console.log("No session");
+  }
+  next();
+});
+
+// Servire i file statici della app React
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const upload = multer({ dest: "uploads/" });
+
+// Endpoint di esempio per il register
+app.post("/register", async (req, res) => {
+  const { email, password, role } = req.body;
+
+  console.log("Request Body:", req.body); // Logga il body della richiesta
+
+  if (!email || !password || !role) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    // Verifica se l'email esiste già
+    const [rows] = await connection.execute(
+      "SELECT * FROM users WHERE email = ?",
+      [email],
+    );
+    if (rows.length > 0) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Cifra la password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Crea un nuovo utente
+    const [result] = await connection.execute(
+      "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
+      [email, hashedPassword, role],
+    );
+
+    console.log("Affected Rows:", result.affectedRows);
+    console.log("Insert ID:", result.insertId);
+
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error("Registration Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Endpoint per il login
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  console.log("Request Body:", req.body); // Logga il body della richiesta
+
+  try {
+    const [rows] = await connection.execute(
+      "SELECT * FROM users WHERE email = ?",
+      [email],
+    );
+    if (rows.length === 0) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const user = rows[0];
+
+    const match = await bcrypt.compare(password, user.password);
+    if (match) {
+      req.session.user = user;
+      console.log("Session after login:", req.session);
+      res.status(200).json({ message: "Login successful", user });
+    } else {
+      res.status(400).json({ message: "Invalid credentials" });
+    }
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Endpoint per il logout
+app.post("/logout", (req, res) => {
+  if (req.session.user) {
+    console.log("Logging out user:", req.session.user);
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Errore durante il logout:", err);
+        return res.status(500).send({ message: "Errore durante il logout" });
+      }
+      res.clearCookie("connect.sid"); // Cancella il cookie di sessione
+      console.log("Logout effettuato con successo");
+      res.status(200).send({ message: "Logout effettuato con successo" });
+    });
+  } else {
+    console.log("Nessuna sessione attiva");
+    res.status(400).send({ message: "Nessuna sessione attiva" });
+  }
+});
+
+//GESTIONE STRUTTURA//
+// Endpoint per ottenere le fattorie
+app.get("/api/farm", async (req, res) => {
+  try {
+    const [results] = await connection.query("SELECT * FROM farm");
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    res.status(500).send("Errore durante il recupero dei dati");
+  }
+});
+
+// Endpoint per ottenere gli elementi della farm
+app.get("/api/elements", async (req, res) => {
+  try {
+    const [results] = await connection.query("SELECT * FROM elements");
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    res.status(500).send("Errore durante il recupero dei dati");
+  }
+});
+
+// Endpoint per ottenere i plots della farm
+app.get("/api/plots", async (req, res) => {
+  try {
+    const [results] = await connection.query("SELECT * FROM plots");
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    res.status(500).send("Errore durante il recupero dei dati");
+  }
+});
+
+// Endpoint per ottenere gli utenti
+app.get("/api/users", async (req, res) => {
+  try {
+    const [results] = await connection.query("SELECT * FROM users");
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    res.status(500).send("Errore durante il recupero dei dati");
+  }
+});
+
+// Endpoint per aggiungere una nuova farm
+app.post("/api/farm", async (req, res) => {
+  const { name } = req.body;
+  try {
+    const [result] = await connection.query(
+      "INSERT INTO farm (name) VALUES (?)",
+      [name],
+    );
+    res.status(201).json({ id: result.insertId, name });
+  } catch (err) {
+    console.error("Error adding data:", err);
+    res.status(500).send("Errore durante l'aggiunta dei dati");
+  }
+});
+
+// Endpoint per eliminare una farm e i relativi elementi
+app.delete("/api/farm/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Inizia una transazione
+    await connection.beginTransaction();
+
+    // Elimina gli elementi collegati alla farm
+    await connection.query("DELETE FROM elementi WHERE farmId = ?", [id]);
+
+    // Elimina i plots collegati alla farm
+    await connection.query("DELETE FROM plots WHERE farmId = ?", [id]);
+
+    // Elimina la farm
+    await connection.query("DELETE FROM farm WHERE id = ?", [id]);
+
+    // Conferma la transazione
+    await connection.commit();
+
+    res.status(200).send("Farm e relativi elementi eliminati con successo");
+  } catch (err) {
+    // In caso di errore, annulla la transazione
+    await connection.rollback();
+
+    console.error("Error deleting farm and its elements:", err);
+    res
+      .status(500)
+      .send("Errore durante l'eliminazione della farm e dei suoi elementi");
+  }
+});
+
+// Endpoint per eliminare una elemento della struttura
+app.delete("/api/elements/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Inizia una transazione
+    await connection.beginTransaction();
+
+    // Elimina l'elemento specifico dal database usando il suo id
+    const [result] = await connection.query(
+      "DELETE FROM elements WHERE id = ?",
+      [id],
+    );
+
+    // Verifica se l'elemento è stato eliminato
+    if (result.affectedRows === 0) {
+      // Se non c'è nessun elemento con l'id specificato
+      await connection.rollback(); // Rollback della transazione in caso di errore
+      return res.status(404).send("Element non trovato");
+    }
+
+    // Commit della transazione se l'elemento è stato eliminato correttamente
+    await connection.commit();
+    res.status(200).send("Element eliminato con successo");
+  } catch (err) {
+    await connection.rollback(); // Rollback della transazione in caso di errore
+    console.error("Error deleting element:", err);
+    res.status(500).send("Errore durante l'eliminazione dell'elemento");
+  }
+});
+
+// Endpoint per eliminare un plot della farm
+app.delete("/api/plots/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Inizia una transazione
+    await connection.beginTransaction();
+
+    // Elimina il plot specifico dal database usando il suo id
+    const [result] = await connection.query("DELETE FROM plots WHERE id = ?", [
+      id,
+    ]);
+
+    // Verifica se il plot è stato eliminato
+    if (result.affectedRows === 0) {
+      // Se non c'è nessun plot con l'id specificato
+      await connection.rollback(); // Rollback della transazione in caso di errore
+      return res.status(404).send("Element non trovato");
+    }
+
+    // Commit della transazione se il plot è stato eliminato correttamente
+    await connection.commit();
+    res.status(200).send("Plot eliminato con successo");
+  } catch (err) {
+    await connection.rollback(); // Rollback della transazione in caso di errore
+    console.error("Error deleting plot:", err);
+    res.status(500).send("Errore durante l'eliminazione del plot");
+  }
+});
+
+// Endpoint per eliminare uno user
+app.delete("/api/users/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Inizia una transazione
+    await connection.beginTransaction();
+
+    // Elimina l'elemento specifico dal database usando il suo id
+    const [result] = await connection.query("DELETE FROM users WHERE id = ?", [
+      id,
+    ]);
+
+    // Verifica se lo user è stato eliminato
+    if (result.affectedRows === 0) {
+      // Se non c'è nessun user con l'id specificato
+      await connection.rollback(); // Rollback della transazione in caso di errore
+      return res.status(404).send("User non trovato");
+    }
+
+    // Commit della transazione se lo user è stato eliminato correttamente
+    await connection.commit();
+    res.status(200).send("User eliminato con successo");
+  } catch (err) {
+    await connection.rollback(); // Rollback della transazione in caso di errore
+    console.error("Error deleting user:", err);
+    res.status(500).send("Errore durante l'eliminazione dello user");
+  }
+});
+
+// Endpoint per aggiungere elementi alla farm
+app.post("/api/elements", async (req, res) => {
+  const { element, name, notes, farmId } = req.body;
+  try {
+    const [result] = await connection.query(
+      "INSERT INTO elements (element, name, notes, farmId) VALUES (?, ?, ?, ?)",
+      [element, name, notes, farmId],
+    );
+    res.status(201).json({ id: result.insertId, element, name, notes, farmId });
+  } catch (err) {
+    console.error("Error inserting element:", err);
+    res.status(500).send("Errore durante l'inserimento dell'elemento");
+  }
+});
+
+// Endpoint per aggiungere plots alla farm
+app.post("/api/plots", async (req, res) => {
+  const {
+    name,
+    codename,
+    variety,
+    ncovas,
+    distance,
+    surface,
+    age,
+    state,
+    irrigation,
+    renda_forecast,
+    farmId,
+  } = req.body;
+
+  console.log("Dati ricevuti dal client:", req.body);
+
+  try {
+    const [result] = await connection.query(
+      "INSERT INTO plots (name, codename, variety, ncovas, distance, surface, age, state, irrigation, renda_forecast, farmId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        name,
+        codename,
+        variety,
+        ncovas,
+        distance,
+        surface,
+        age,
+        state,
+        irrigation,
+        renda_forecast,
+        farmId,
+      ],
+    );
+
+    console.log("Risultato dell'inserimento nel database:", result);
+
+    res.status(201).json({
+      id: result.insertId,
+      name,
+      codename,
+      variety,
+      ncovas,
+      distance,
+      surface,
+      age,
+      state,
+      irrigation,
+      renda_forecast,
+      farmId,
+    });
+  } catch (err) {
+    console.error("Errore durante l'inserimento del plot nel database:", err);
+    res.status(500).send("Errore durante l'inserimento del plot");
+  }
+});
+
+// Endpoint per l'upload degli appezzamenti tramite file Excel
+app.post("/api/excelplots", upload.single("file"), async (req, res) => {
+  try {
+    const filePath = req.file?.path;
+    const farmId = req.body.farmId;
+
+    if (!filePath) {
+      return res.status(400).json({ message: "Nessun file ricevuto." });
+    }
+
+    if (!farmId) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: "Farm ID mancante." });
+    }
+
+    // Leggi il file Excel
+    const buffer = fs.readFileSync(req.file.path);
+    const workbook = XLSX.read(buffer, { type: "buffer" });
+
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    console.log("Righe importate:", rows.length);
+    ç;
+
+    // Validazione base: almeno una riga e colonne necessarie
+    const requiredFields = [
+      "name",
+      "codename",
+      "variety",
+      "ncovas",
+      "distance",
+      "surface",
+      "age",
+      "state",
+      "irrigation",
+    ];
+
+    if (rows.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: "Il file Excel è vuoto." });
+    }
+
+    // Controlla che tutte le colonne esistano
+    const missing = requiredFields.filter((field) => !(field in rows[0]));
+    if (missing.length > 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({
+        message: `Colonne mancanti nel file: ${missing.join(", ")}`,
+      });
+    }
+
+    // Inserisci i dati
+    for (const row of rows) {
+      const {
+        name,
+        codename,
+        variety,
+        ncovas,
+        distance,
+        surface,
+        age,
+        state,
+        irrigation,
+        renda_forecast = null,
+      } = row;
+
+      await connection.query(
+        `INSERT INTO plots 
+         (name, codename, variety, ncovas, distance, surface, age, state, irrigation, renda_forecast, farmId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          name,
+          codename,
+          variety,
+          ncovas,
+          distance,
+          surface,
+          age,
+          state,
+          irrigation,
+          renda_forecast,
+          farmId,
+        ],
+      );
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({
+      message: `Importazione completata (${rows.length} appezzamenti).`,
+    });
+  } catch (error) {
+    console.error("Errore durante l'importazione Excel:", error);
+    res.status(500).json({
+      message: "Errore interno durante l'elaborazione del file Excel.",
+    });
+  }
+});
+
+// Endpoint per aggiungere un nuovo lotto
+app.post("/api/newlot", async (req, res) => {
+  const { plot, volume, date, method, type } = req.body;
+
+  const getLastNlotQuery =
+    "SELECT newlot_nLot FROM newlot ORDER BY newlot_nLot DESC LIMIT 1";
+  const insertNewLotQuery =
+    "INSERT INTO newlot (plot, volume, date, method, type, worked, newlot_nLot) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+  try {
+    const [lastNlotResult] = await connection.query(getLastNlotQuery);
+    let lastNlot;
+
+    if (lastNlotResult.length === 0) {
+      lastNlot = "H00000"; // Valore iniziale se nessun risultato è trovato
+    } else {
+      lastNlot = lastNlotResult[0].newlot_nLot;
+    }
+
+    const lastNumber = parseInt(lastNlot.substring(1)) + 1;
+    const newNlot = "H" + lastNumber.toString().padStart(5, "0");
+
+    const newWorked = 0;
+
+    const values = [plot, volume, date, method, type, newWorked, newNlot];
+    const [result] = await connection.query(insertNewLotQuery, values);
+
+    console.log("Risultato dell'inserimento:", result);
+
+    res.status(201).json({
+      id: result.insertId,
+      plot,
+      volume,
+      date,
+      method,
+      type,
+      worked: newWorked,
+      newlot_nLot: newNlot,
+    });
+  } catch (err) {
+    console.error("Errore nell'inserimento dei dati:", err);
+    res.status(500).send("Errore nell'inserimento del nuovo lotto");
+  }
+});
+
+// Endpoint per ottenere i nuovi lotti
+app.get("/api/newlot", async (req, res) => {
+  const sql =
+    "SELECT id, date, plot, volume, method, type, worked, newlot_nLot FROM newlot WHERE worked = 0 ORDER BY date DESC";
+
+  try {
+    const [results] = await connection.query(sql);
+    res.json(results);
+  } catch (err) {
+    console.error("Errore nel recupero dei nuovi lotti:", err);
+    res.status(500).send("Errore nel recupero dei nuovi lotti");
+  }
+});
+
+//CARDS in DASHBOARD//
+// Endpoint per ottenere i dati del patio e i plot da newlot
+app.get("/api/patiocard", async (req, res) => {
+  try {
+    const [results] = await connection.query(
+      `SELECT 
+  p.id,
+  p.date,
+  p.name,
+  CASE
+    WHEN p.status = 'active' THEN p.volume
+    WHEN p.status = 'fermented' THEN p.volume
+    WHEN p.status = 'split' THEN p.partial_volume
+    ELSE NULL
+  END AS volume,
+  p.type,
+  p.status,
+  GROUP_CONCAT(n.plot SEPARATOR ', ') as plots
+FROM patio p
+JOIN patio_prevnlot pp ON p.id = pp.patio_id
+JOIN newlot n ON n.newlot_nLot = pp.prev_nLot_newlot
+WHERE p.status != 'finished'
+GROUP BY p.id;`,
+    );
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    res.status(500).send("Errore durante il recupero dei dati");
+  }
+});
+
+// Endpoint per ottenere i dati del dryer e i plot da newlot
+app.get("/api/dryercard", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        d.id,
+        d.date,
+        d.dryer AS name,
+        d.volume,
+        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
+        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
+      FROM dryer d
+      JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+      JOIN patio p ON dp.prev_nLot_patio = p.patio_nlot
+      JOIN patio_prevnlot pp ON p.id = pp.patio_id
+      JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      WHERE d.status = 0
+      GROUP BY d.id;
+    `;
+    const [results] = await connection.query(query);
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Errore nella route /api/dryercard:", err);
+    res.status(500).send("Errore durante il recupero dei dati del dryer");
+  }
+});
+
+// Endpoint per ottenere i dati della fermentation e i plot da newlot
+app.get("/api/fermentationcard", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        f.id,
+        f.date,
+        f.fermentation_nLot AS name,
+        f.volume,
+        f.method AS type,
+        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
+      FROM fermentation f
+      JOIN fermentation_prevnlot fp ON f.id = fp.fermentation_id
+      JOIN patio p ON fp.prev_nLot_patio = p.patio_nlot
+      JOIN patio_prevnlot pp ON p.id = pp.patio_id
+      JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      WHERE f.worked = 0
+      GROUP BY f.id;
+    `;
+
+    const [results] = await connection.query(query);
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Errore /api/fermentationcard:", err);
+    res.status(500).send("Errore recupero fermentation card");
+  }
+});
+
+// Endpoint per ottenere i dati della resting (tulha) e i plot da newlot
+app.get("/api/restcard", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        r.id,
+        r.dateIn AS date,
+        r.tulha AS name,
+        r.volume,
+        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
+        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
+      FROM rest r
+      JOIN rest_prevnlot rp ON r.id = rp.rest_id
+      JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
+      JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+      JOIN patio p ON dp.prev_nLot_patio = p.patio_nlot
+      JOIN patio_prevnlot pp ON p.id = pp.patio_id
+      JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      WHERE r.status != 'finished'
+      GROUP BY r.id;
+    `;
+
+    const [results] = await connection.query(query);
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Errore /api/restcard:", err);
+    res.status(500).send("Errore recupero rest card");
+  }
+});
+
+// Endpoint per ottenere i patii per la dashboard
+app.get("/api/patio", async (req, res) => {
+  try {
+    const [results] = await connection.query("SELECT * FROM patio");
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    res.status(500).send("Errore durante il recupero dei dati");
+  }
+});
+
+//Endpoint per aggiungere un nuovo lotto nel patio
+app.post("/api/patio", async (req, res) => {
+  const data = req.body;
+  console.log("POST ricevuto:", data);
+
+  if (!Array.isArray(data)) {
+    return res.status(400).json({ error: "Invalid data format" });
+  }
+
+  const getLastNlotQuery =
+    "SELECT patio_nLot FROM patio ORDER BY patio_nLot DESC LIMIT 1";
+  const insertPatioQuery = `INSERT INTO patio (name, volume, type, date, status, fermented, patio_nLot) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  const selectNewPatioQuery = "SELECT * FROM patio WHERE id = ?";
+
+  try {
+    await connection.beginTransaction();
+
+    // Ottenere l'ultimo patio_nLot
+    const [lastNlotResult] = await connection.query(getLastNlotQuery);
+    let lastNlot =
+      lastNlotResult.length === 0 ? "P00000" : lastNlotResult[0].patio_nLot;
+    let lastNumber = parseInt(lastNlot.substring(1)) + 1;
+
+    const patioRecords = [];
+
+    for (const entry of data) {
+      const {
+        name,
+        volume,
+        type,
+        date,
+        status = "active",
+        fermented = 0,
+      } = entry;
+
+      const newNlot = "P" + lastNumber.toString().padStart(5, "0");
+      lastNumber++;
+
+      const [result] = await connection.query(insertPatioQuery, [
+        name,
+        volume,
+        type,
+        date,
+        status,
+        fermented,
+        newNlot,
+      ]);
+
+      // Dopo aver inserito, recupera il record dal db
+      const [newPatio] = await connection.query(selectNewPatioQuery, [
+        result.insertId,
+      ]);
+      patioRecords.push(newPatio[0]);
+    }
+
+    await connection.commit();
+
+    const patioIds = patioRecords.map((p) => p.id);
+
+    res
+      .status(201)
+      .json({ message: "Data inserted successfully", patioRecords, patioIds });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Error inserting data:", err);
+    res.status(500).json({ error: "Error inserting data" });
+  }
+});
+
+//Endpoint per modificare il valore worked del lotto
+app.patch("/api/newlot/:id", async (req, res) => {
+  const { id } = req.params;
+  console.log(`Richiesta di aggiornamento ricevuta per il lotto con ID: ${id}`);
+
+  try {
+    const [result] = await connection.query(
+      "UPDATE newlot SET worked = 1 WHERE id = ?",
+      [id],
+    );
+    console.log(
+      `Risultato dell'aggiornamento per il lotto con ID ${id}:`,
+      result,
+    );
+
+    res.status(200).json({ message: "Lotto aggiornato con successo" });
+  } catch (error) {
+    console.error("Errore nell'aggiornamento del lotto:", error);
+    res.status(500).json({ error: "Errore nel server" });
+  }
+});
+
+//Endpoint per aggiungere i dati in patio_prevnlot
+app.post("/api/patio_prevnlot", async (req, res) => {
+  console.log("Dati ricevuti:", req.body);
+  try {
+    const data = req.body; // Riceve un array di { patio_id, prev_nLot_newlot, prev_nLot_fermentation }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({ error: "Dati non validi" });
+    }
+
+    const values = data.map(({ patio_id, prev_nLot_newlot }) => [
+      patio_id,
+      prev_nLot_newlot,
+    ]);
+
+    await connection.query(
+      "INSERT INTO patio_prevnlot (patio_id, prev_nLot_newlot) VALUES ?",
+      [values],
+    );
+
+    res.status(201).json({ message: "Dati inseriti con successo" });
+  } catch (error) {
+    console.error("Errore inserendo dati in patio_prevnlot:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+//Endpoint per modificare i lotti del patio partial_volume e status
+app.patch("/api/patio/update-lots", async (req, res) => {
+  const lots = req.body.lots;
+
+  try {
+    for (const lot of lots) {
+      const { id, volumeUsed } = lot;
+
+      const [existingRows] = await connection.query(
+        "SELECT volume, partial_volume, status FROM patio WHERE id = ?",
+        [id],
+      );
+
+      if (existingRows.length === 0) continue;
+
+      const { volume, partial_volume, status } = existingRows[0];
+
+      if (status === "active") {
+        const remaining = volume - volumeUsed;
+
+        if (remaining > 0) {
+          await connection.query(
+            "UPDATE patio SET status = ?, partial_volume = ? WHERE id = ?",
+            ["split", remaining, id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
+            ["finished", id],
+          );
+        }
+      } else if (status === "split") {
+        const remaining = partial_volume - volumeUsed;
+
+        if (remaining > 0) {
+          await connection.query(
+            "UPDATE patio SET partial_volume = ? WHERE id = ?",
+            [remaining, id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
+            ["finished", id],
+          );
+        }
+      }
+    }
+
+    res.json({ message: "Lotti aggiornati con successo" });
+  } catch (err) {
+    console.error("Errore PATCH /api/patio/update-lots:", err);
+    res.status(500).json({ error: "Errore durante l'aggiornamento dei lotti" });
+  }
+});
+
+//Fermentation
+// Endpoint per ottenere il valore di newlot_nLot
+app.get("/api/trace/prev-nlot-newlot/:fermentation_nLot", async (req, res) => {
+  const fermentation_nLot = req.params.fermentation_nLot;
+
+  try {
+    const [result] = await connection.query(
+      `
+      SELECT pprev.prev_nLot_newlot
+      FROM fermentation f
+      JOIN fermentation_prevnlot fprev ON f.id = fprev.fermentation_id
+      JOIN patio p ON fprev.prev_nLot_patio = p.patio_nLot
+      JOIN patio_prevnlot pprev ON p.id = pprev.patio_id
+      WHERE f.fermentation_nLot = ?
+      LIMIT 1
+      `,
+      [fermentation_nLot],
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Dato non trovato" });
+    }
+
+    res.status(200).json({ prev_nLot_newlot: result[0].prev_nLot_newlot });
+  } catch (error) {
+    console.error("Errore nel recupero:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// Endpoint per ottenere i lotti di fermentazione attivi
+app.get("/api/fermentation/active", async (req, res) => {
+  try {
+    const active = await connection.query(
+      "SELECT * FROM fermentation WHERE worked = 0",
+    );
+    res.json(active[0]);
+  } catch (err) {
+    console.error("Errore nel recupero delle fermentazioni attive:", err);
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// Endpoint per aggiungere i lotti di fermentazione
+app.post("/api/fermentation", async (req, res) => {
+  const { volume, date, type, timeIn, method, lots } = req.body;
+
+  if (!volume || !date || !type || !timeIn || !method || !Array.isArray(lots)) {
+    return res.status(400).json({ message: "Dati incompleti" });
+  }
+
+  try {
+    await connection.beginTransaction();
+
+    // 2.1 – genera nuovo fermentation_nlot
+    const [last] = await connection.query(
+      "SELECT fermentation_nLot FROM fermentation ORDER BY fermentation_nLot DESC LIMIT 1",
+    );
+    const lastNlot = last.length === 0 ? "F00000" : last[0].fermentation_nLot;
+    const nextNum = parseInt(lastNlot.substring(1)) + 1;
+    const newNlot = "F" + nextNum.toString().padStart(5, "0");
+
+    // 2.2 – inserisci il record in `fermentation`
+    const insertFermentationSQL = `
+      INSERT INTO fermentation (volume, date, type, timeIn, method, fermentation_nLot)
+      VALUES (?, ?, ?, ?, ?, ?)`;
+    const [ins] = await connection.query(insertFermentationSQL, [
+      volume,
+      date,
+      type,
+      timeIn,
+      method,
+      newNlot,
+    ]);
+
+    const fermentationIds = ins.insertId;
+
+    // 2.3 – per ogni lotto selezionato, inserisci in fermentation_prevnlot
+    const insertPrev = `
+      INSERT INTO fermentation_prevnLot (fermentation_id, prev_nLot_patio)
+      VALUES (?, ?)`;
+    console.log("Lots ricevuti:", lots);
+    for (const lot of lots) {
+      await connection.query(insertPrev, [
+        fermentationIds,
+        lot.prev_nLot_patio,
+      ]);
+    }
+
+    await connection.commit();
+    res
+      .status(201)
+      .json({ message: "Data inserted successfully", fermentationIds });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Error inserting data:", err);
+    res.status(500).json({ error: err.message, full: err });
+  }
+});
+
+//Endpoint per aggiungere i dati in patio_prevnlot da fermentation
+app.post("/api/patio_prevnlot_fermentation", async (req, res) => {
+  console.log("Dati ricevuti:", req.body);
+  try {
+    const data = req.body; // Riceve un array di { patio_id, prev_nLot_newlot, prev_nLot_fermentation }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({ error: "Dati non validi" });
+    }
+
+    const values = data.map(
+      ({ patio_id, prev_nLot_newlot, prev_nLot_fermentation }) => [
+        patio_id,
+        prev_nLot_newlot,
+        prev_nLot_fermentation,
+      ],
+    );
+
+    await connection.query(
+      "INSERT INTO patio_prevnlot (patio_id, prev_nLot_newlot, prev_nLot_fermentation) VALUES ?",
+      [values],
+    );
+
+    res.status(201).json({ message: "Dati inseriti con successo" });
+  } catch (error) {
+    console.error("Errore inserendo dati in patio_prevnlot:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// Enpoint per modificare il valore del volume di patio
+app.patch("/api/patio/update-lots-fermentation", async (req, res) => {
+  const lots = req.body.lots; // array di oggetti { id, volumeUsed }
+
+  try {
+    for (const lot of lots) {
+      const { id, volumeUsed } = lot;
+
+      // Recupera il lotto dal database
+      const [existingRows] = await connection.query(
+        "SELECT volume, partial_volume, status FROM patio WHERE id = ?",
+        [id],
+      );
+
+      if (existingRows.length === 0) continue;
+
+      const { volume, partial_volume, status } = existingRows[0];
+
+      if (status === "active") {
+        const remaining = volume - volumeUsed;
+
+        if (remaining > 0) {
+          await connection.query(
+            "UPDATE patio SET status = ?, partial_volume = ? WHERE id = ?",
+            ["split", remaining, id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
+            ["finished", id],
+          );
+        }
+      } else if (status === "split") {
+        const remaining = partial_volume - volumeUsed;
+
+        if (remaining > 0) {
+          await connection.query(
+            "UPDATE patio SET partial_volume = ? WHERE id = ?",
+            [remaining, id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
+            ["finished", id],
+          );
+        }
+      } else {
+        // Fallback per status inattesi
+        console.warn(
+          `⚠️  PATCH ignorato per patio con id=${id} e status=${status}`,
+        );
+      }
+    }
+
+    res.json({ message: "Lotti aggiornati con successo" });
+  } catch (err) {
+    console.error("Errore PATCH /api/patio/update-lots:", err);
+    res.status(500).json({ error: "Errore durante l'aggiornamento dei lotti" });
+  }
+});
+
+// Endpoint per modificare il valore worked del lotto di fermentazione
+app.patch("/api/fermentation/update-lots", async (req, res) => {
+  const { lots } = req.body;
+
+  if (!Array.isArray(lots) || lots.length === 0) {
+    return res.status(400).json({ error: "Nessun lotto da aggiornare." });
+  }
+
+  try {
+    await connection.beginTransaction();
+
+    for (const lot of lots) {
+      const { id, dateOut, timeOut, worked } = lot;
+
+      if (!id || !dateOut || !timeOut || typeof worked !== "number") {
+        throw new Error(`Dati mancanti o malformati per il lotto con ID ${id}`);
+      }
+
+      await connection.query(
+        `UPDATE fermentation
+         SET dateOut = ?, timeOut = ?, worked = ?
+         WHERE id = ?`,
+        [dateOut, timeOut, worked, id],
+      );
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: "Lotti aggiornati con successo." });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Errore durante il PATCH:", error);
+    res
+      .status(500)
+      .json({ error: "Errore durante l'aggiornamento dei lotti." });
+  }
+});
+
+//DRYER
+// Endpoint per ottenere i dati del dryer e i plot da newlot
+app.get("/api/dryer", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        d.id,
+        d.date,
+        d.dryer AS name,
+        d.volume,
+        d.status,
+        d.dryer_nLot,
+        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
+        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
+      FROM dryer d
+      LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+      LEFT JOIN patio p ON dp.prev_nLot_patio = p.patio_nlot
+      LEFT JOIN patio_prevnlot pp ON p.id = pp.patio_id
+      LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      GROUP BY d.id;
+    `;
+    const [results] = await connection.query(query);
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Errore nella route /api/dryercard:", err);
+    res.status(500).send("Errore durante il recupero dei dati del dryer");
+  }
+});
+
+//Endpoint per aggiungere i dati in dryer
+app.post("/api/dryer", async (req, res) => {
+  const { dryer, volume, date, timeIn, lots } = req.body;
+  // lots: array di { prev_nLot_patio, volume } fornito dal frontend
+
+  if (!dryer || !volume || !date || !timeIn || !Array.isArray(lots)) {
+    return res.status(400).json({ message: "Dati incompleti" });
+  }
+
+  try {
+    await connection.beginTransaction();
+
+    // 2.1 – genera nuovo dryer_nlot
+    const [last] = await connection.query(
+      "SELECT dryer_nLot FROM dryer ORDER BY dryer_nLot DESC LIMIT 1",
+    );
+    const lastNlot = last.length === 0 ? "D00000" : last[0].dryer_nLot;
+    const nextNum = parseInt(lastNlot.substring(1)) + 1;
+    const newNlot = "D" + nextNum.toString().padStart(5, "0");
+
+    // 2.2 – inserisci il record in `dryer`
+    const insertDryerSQL = `
+      INSERT INTO dryer (dryer, volume, date, timeIn, dryer_nLot)
+      VALUES (?, ?, ?, ?, ?)`;
+    const [ins] = await connection.query(insertDryerSQL, [
+      dryer,
+      volume,
+      date,
+      timeIn,
+      newNlot,
+    ]);
+
+    const dryerId = ins.insertId;
+
+    // 2.3 – per ogni lotto selezionato, inserisci in dryer_prevnlot
+    const insertPrev = `
+      INSERT INTO dryer_prevnLot (dryer_id, prev_nLot_patio, volume)
+      VALUES (?, ?, ?)`;
+    for (const lot of lots) {
+      await connection.query(insertPrev, [
+        dryerId,
+        lot.prev_nLot_patio,
+        lot.volume,
+      ]);
+    }
+
+    await connection.commit();
+    res.status(201).json({
+      message: "Dryer registrato con successo",
+      dryerId,
+      dryer_nLot: newNlot,
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Errore in POST /api/dryer:", err);
+    res.status(500).json({ message: "Errore interno" });
+  }
+});
+
+//TULHA
+// Endpoint per ottenere i dati della tulha
+app.get("/api/rest", async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        r.id,
+        r.dateIn,
+        r.tulha AS name,
+        r.volume,
+        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
+        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots,
+        MAX(CASE WHEN p.type = 'fermented' THEN 1 ELSE 0 END) AS fermented
+      FROM rest r
+      JOIN rest_prevnlot rp ON r.id = rp.rest_id
+      LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
+      LEFT JOIN patio_prevnlot pp ON p.id = pp.patio_id
+      LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      GROUP BY r.id
+      ORDER BY r.dateIn DESC;
+    `;
+
+    const [results] = await connection.query(query);
+
+    // normalizziamo fermented
+    const normalized = results.map((r) => ({
+      ...r,
+      fermented: r.fermented === 1 ? "yes" : "no",
+    }));
+
+    res.status(200).json(normalized);
+  } catch (err) {
+    console.error("Errore GET /api/rest:", err);
+    res.status(500).send("Errore durante il recupero dei dati rest");
+  }
+});
+
+//Endpoint per il post dei dati in rest (tulha)
+app.post("/api/rest", async (req, res) => {
+  const { tulha, volume, dateIn, timeIn, lots } = req.body;
+
+  if (!tulha || !volume || !dateIn || !timeIn || !Array.isArray(lots)) {
+    return res.status(400).json({ message: "Dati incompleti" });
+  }
+
+  try {
+    await connection.beginTransaction();
+
+    // genera nuovo rest_nLot
+    const [last] = await connection.query(
+      "SELECT rest_nLot FROM rest ORDER BY rest_nLot DESC LIMIT 1",
+    );
+
+    const lastNlot = last.length === 0 ? "R00000" : last[0].rest_nLot;
+    const nextNum = parseInt(lastNlot.substring(1)) + 1;
+    const newNlot = "R" + nextNum.toString().padStart(5, "0");
+
+    // inserimento REST
+    const [ins] = await connection.query(
+      `INSERT INTO rest 
+       (tulha, volume, dateIn, timeIn, rest_nLot)
+       VALUES (?, ?, ?, ?, ?)`,
+      [tulha, volume, dateIn, timeIn, newNlot],
+    );
+
+    const restId = ins.insertId;
+
+    // inserimento PREV LOT
+    const insertPrev = `
+      INSERT INTO rest_prevnlot
+      (rest_id, prev_nLot_dryer, prev_nLot_patio)
+      VALUES (?, ?, ?)
+    `;
+
+    for (const lot of lots) {
+      const dryer = lot.prev_nLot_dryer || null;
+      const patio = lot.prev_nLot_patio || null;
+
+      // 🔒 blocca inserimenti sporchi
+      if (!dryer && !patio) continue;
+
+      await connection.query(insertPrev, [restId, dryer, patio]);
+    }
+
+    await connection.commit();
+
+    res.status(201).json({
+      message: "Rest registrato con successo",
+      restId,
+      rest_nLot: newNlot,
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Errore POST /api/rest:", err);
+    res.status(500).json({ message: "Errore interno" });
+  }
+});
+
+//Endpoint per modificare i lotti del dryer partial_volume e status
+app.patch("/api/rest/update-lots", async (req, res) => {
+  const { lots } = req.body;
+
+  if (!Array.isArray(lots) || lots.length === 0) {
+    return res.status(400).json({ error: "Nessun lotto da aggiornare." });
+  }
+
+  try {
+    await connection.beginTransaction();
+
+    console.log("LOTS ARRIVATI:", lots);
+
+    for (const lot of lots) {
+      const { id, volumeUsed } = lot;
+
+      const [rows] = await connection.query(
+        "SELECT volume, partial_volume, status FROM dryer WHERE id = ?",
+        [id],
+      );
+
+      if (rows.length === 0) continue;
+
+      const { volume, partial_volume, status } = rows[0];
+
+      if (status === "active") {
+        const remaining = volume - volumeUsed;
+
+        if (remaining > 0) {
+          await connection.query(
+            "UPDATE dryer SET status = ?, partial_volume = ? WHERE id = ?",
+            ["split", remaining, id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE dryer SET status = ?, partial_volume = NULL WHERE id = ?",
+            ["finished", id],
+          );
+        }
+      } else if (status === "split") {
+        const remaining = partial_volume - volumeUsed;
+
+        if (remaining > 0) {
+          await connection.query(
+            "UPDATE dryer SET partial_volume = ? WHERE id = ?",
+            [remaining, id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE dryer SET status = ?, partial_volume = NULL WHERE id = ?",
+            ["finished", id],
+          );
+        }
+
+        console.log("INSERISCO:", lot);
+      }
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: "Lotti aggiornati" });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Errore PATCH /api/rest/update-lots:", err);
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+//BENEFICIO
+//Endpoint per ottenere i dati di tutte le tulhas
+app.get("/api/restforcleaning", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+  r.id AS rest_id,
+  r.tulha,
+  r.dateIn,
+  r.volume AS rest_volume,
+
+  -- dati patio diretti
+  p.date AS patio_date,
+  p.type AS patio_type,
+  p.volume AS patio_volume,
+
+  -- dati dryer
+  d.date AS dryer_date,
+  d.volume AS dryer_volume,
+  p2.type AS dryer_type
+
+FROM rest r
+
+JOIN rest_prevnlot rp 
+  ON r.id = rp.rest_id
+
+LEFT JOIN patio p
+  ON rp.prev_nLot_patio = p.patio_nLot
+
+LEFT JOIN dryer d
+  ON rp.prev_nLot_dryer = d.dryer
+
+LEFT JOIN dryer_prevnlot dp
+  ON d.id = dp.dryer_id
+
+LEFT JOIN patio p2
+  ON dp.prev_nLot_patio = p2.patio_nlot
+
+WHERE r.status = 'active'
+
+ORDER BY r.dateIn DESC;
+ 
+    `;
+
+    const [rows] = await connection.query(query);
+
+    const grouped = {};
+
+    rows.forEach((row) => {
+      if (!grouped[row.rest_id]) {
+        grouped[row.rest_id] = {
+          rest_id: row.rest_id,
+          tulha: row.tulha,
+          dateIn: row.dateIn,
+          volume: row.rest_volume,
+          lots: [],
+        };
+      }
+
+      grouped[row.rest_id].lots.push({
+        date: row.patio_date || row.dryer_date,
+        volume: row.patio_volume || row.dryer_volume,
+        type: row.patio_type || row.dryer_type,
+        origin: row.patio_date ? "patio" : "dryer",
+      });
+    });
+
+    res.json(Object.values(grouped));
+  } catch (err) {
+    console.error("Errore /api/restforcleaning:", err);
+    res.status(500).send("Errore recupero restforcleaning");
+  }
+});
+
+app.use(express.static(path.join(__dirname, "..", "client", "build")));
+
+// Gestire tutte le altre richieste restituendo il file index.html di React
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "client", "build", "index.html"));
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

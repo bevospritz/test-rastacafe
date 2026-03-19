@@ -1,0 +1,22 @@
+.dashboard-content {
+    transition: margin-left 0.5s ease;
+    margin-top: 60px;
+  }
+  
+  .dashboard-expanded {
+    margin-left: 0; /* Nessun margine quando la sidebar è chiusa */
+    width: 100%; /* Estende il contenuto per tutta la larghezza */
+  }
+  
+  .dashboard-collapsed {
+    margin-left: 250px; /* Imposta il margine a sinistra quando la sidebar è aperta */
+    width: calc(100% - 250px); /* Riduci la larghezza del contenuto per adattarla alla sidebar */
+  }
+
+  @media (max-width: 414px) {
+    .dashboard-content {
+      transition: none; /* Rimuove la transizione */
+      margin-left: 0; /* Nessun margine a sinistra */
+      width: 100%; /* Estende il contenuto per tutta la larghezza */
+    }
+  }
