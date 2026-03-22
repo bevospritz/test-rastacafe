@@ -1,22 +1,28 @@
-.dashboard-content {
-    transition: margin-left 0.5s ease;
-    margin-top: 60px;
-  }
-  
-  .dashboard-expanded {
-    margin-left: 0; /* Nessun margine quando la sidebar è chiusa */
-    width: 100%; /* Estende il contenuto per tutta la larghezza */
-  }
-  
-  .dashboard-collapsed {
-    margin-left: 250px; /* Imposta il margine a sinistra quando la sidebar è aperta */
-    width: calc(100% - 250px); /* Riduci la larghezza del contenuto per adattarla alla sidebar */
-  }
+/* Dashboard.css */
 
-  @media (max-width: 414px) {
-    .dashboard-content {
-      transition: none; /* Rimuove la transizione */
-      margin-left: 0; /* Nessun margine a sinistra */
-      width: 100%; /* Estende il contenuto per tutta la larghezza */
-    }
+.dashboard-content {
+  transition: margin-left 0.3s ease;
+  margin-top: 60px;       /* altezza navbar */
+  padding: 24px;          /* spazio interno su tutti i lati */
+  box-sizing: border-box;
+  min-height: calc(100vh - 60px);
+}
+
+.dashboard-expanded {
+  margin-left: 0;
+  width: 100%;
+}
+
+.dashboard-collapsed {
+  margin-left: 250px;               /* larghezza sidebar aperta */
+  width: calc(100% - 250px);
+}
+
+@media (max-width: 414px) {
+  .dashboard-content {
+    transition: none;
+    margin-left: 0;
+    width: 100%;
+    padding: 16px;
   }
+}

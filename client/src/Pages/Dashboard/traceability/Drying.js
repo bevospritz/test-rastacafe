@@ -1,27 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./Traceability.css";
+import "../Traceability.css";
 
 const Drying = () => {
   const [patioLots, setPatioLots] = useState([]);
   const [selectedLots, setSelectedLots] = useState([]);
-  const [lotVolumes, setLotVolumes] = useState({}); // percentage per lot
+  const [lotVolumes, setLotVolumes] = useState({});
   const [dryers, setDryers] = useState([]);
   const [form, setForm] = useState({
     dryer: "",
     date: "",
     timeIn: "",
   });
+
   const navigate = useNavigate();
 
-  // Load patio lots and dryers
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/patio")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : res.data.data;
-        // filter out finished, keep active and split
         const filtered = data.filter((lot) => lot.status !== "finished");
         setPatioLots(filtered);
       })
@@ -39,18 +38,34 @@ const Drying = () => {
       .catch((err) => console.error("Errore caricamento dryers:", err));
   }, []);
 
-  // Helper: get display volume based on status
   const getDisplayVolume = (lot) => {
     return lot.status === "split" && lot.partial_volume != null
       ? lot.partial_volume
       : lot.volume;
   };
 
-  // Toggle selection
+  // Logica CD centralizzata con confirm (uguale a Resting)
+  const checkCDMix = (lot, currentSelected) => {
+    const hasCD = currentSelected.some((l) => l.type === "CD");
+    const isCD = lot.type === "CD";
+    const hasNonCD = currentSelected.some((l) => l.type !== "CD");
+
+    if (isCD && hasNonCD) {
+      return window.confirm(
+        "Attenzione: stai cercando di aggiungere un lotto CD a lotti di tipo diverso (Dry/Green/Natural).\n\nSei sicuro di voler mescolare i tipi?"
+      );
+    }
+    if (!isCD && hasCD) {
+      return window.confirm(
+        "Attenzione: stai cercando di aggiungere un lotto " + lot.type + " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?"
+      );
+    }
+    return true;
+  };
+
   const handleSelectLot = (lot) => {
     const exists = selectedLots.find((l) => l.id === lot.id);
 
-    // Se sto deselezionando, tutto normale
     if (exists) {
       setSelectedLots((prev) => prev.filter((l) => l.id !== lot.id));
       setLotVolumes((prev) => {
@@ -61,38 +76,16 @@ const Drying = () => {
       return;
     }
 
-    // 🔽 LOGICA DI BLOCCO CD ↔ Green/Dry
-    const hasCD = selectedLots.some((l) => l.type === "CD");
-    const isCD = lot.type === "CD";
-    const hasNonCD = selectedLots.some((l) => l.type !== "CD");
+    if (!checkCDMix(lot, selectedLots)) return;
 
-    // Se sto provando a selezionare un CD ma ho già Dry/Green → blocco
-    if (isCD && hasNonCD) {
-      alert(
-        "Non puoi mescolare lotti di tipo CD con altri tipi (Dry/Green/Natural)."
-      );
-      return;
-    }
-
-    // Se sto provando a selezionare un Dry/Green ma ho già CD → blocco
-    if (!isCD && hasCD) {
-      alert(
-        "Non puoi mescolare lotti di tipo CD con altri tipi (Dry/Green/Natural)."
-      );
-      return;
-    }
-
-    // Se tutto ok, seleziono normalmente
     setSelectedLots((prev) => [...prev, lot]);
     setLotVolumes((prev) => ({ ...prev, [lot.id]: 100 }));
   };
 
-  // Slider change only updates local state
   const handleSliderChange = (lot, value) => {
     setLotVolumes((prev) => ({ ...prev, [lot.id]: value }));
   };
 
-  // Calculate total partial volume for submit
   const calculateTotalPartialVolume = () => {
     return selectedLots.reduce((sum, lot) => {
       const perc = lotVolumes[lot.id] || 0;
@@ -101,11 +94,9 @@ const Drying = () => {
     }, 0);
   };
 
-  // Submit handler: POST dryer, then PATCH each lot
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // PAYLOAD per POST /api/dryer
     const dryerPayload = {
       dryer: form.dryer,
       volume: calculateTotalPartialVolume(),
@@ -117,9 +108,6 @@ const Drying = () => {
       })),
     };
 
-    console.log("Payload inviato a /api/dryer:", dryerPayload);
-
-    // VALIDAZIONE VELOCE (anti 500)
     if (
       !dryerPayload.dryer ||
       typeof dryerPayload.volume !== "number" ||
@@ -128,64 +116,39 @@ const Drying = () => {
       !Array.isArray(dryerPayload.lots) ||
       dryerPayload.lots.length === 0
     ) {
-      console.error("Errore: Payload incompleto o malformato", dryerPayload);
       alert("Errore: dati incompleti, controlla i campi del form.");
       return;
     }
 
     try {
-      // POST dryer
-      const postRes = await axios.post(
-        "http://localhost:5000/api/dryer",
-        dryerPayload
-      );
+      const postRes = await axios.post("http://localhost:5000/api/dryer", dryerPayload);
       console.log("POST /api/dryer ok:", postRes.data);
-      console.log("Richiesta POST ricevuta su /api/dryer");
 
-      // PATCH patio
-      try {
-        const patchPayload = {
-          lots: selectedLots.map((lot) => ({
-            id: lot.id,
-            volumeUsed: Math.round(
-              (lotVolumes[lot.id] / 100) * getDisplayVolume(lot)
-            ),
-          })),
-        };
+      const patchPayload = {
+        lots: selectedLots.map((lot) => ({
+          id: lot.id,
+          volumeUsed: Math.round((lotVolumes[lot.id] / 100) * getDisplayVolume(lot)),
+        })),
+      };
 
-        console.log("Payload inviato a /api/patio/update-lots:", patchPayload);
-
-        const patchRes = await axios.patch(
-          "http://localhost:5000/api/patio/update-lots",
-          patchPayload
-        );
-
-        console.log("PATCH ok:", patchRes.data);
-      } catch (error) {
-        console.error(
-          "Errore PATCH:",
-          error.response ? error.response.data : error.message
-        );
-      }
+      await axios.patch("http://localhost:5000/api/patio/update-lots", patchPayload);
 
       alert("Dryer salvato e lotti aggiornati con successo!");
+      navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
-      console.error(
-        "Errore POST /api/dryer:",
-        err.response ? err.response.data : err.message
-      );
+      console.error("Errore:", err.response ? err.response.data : err.message);
       alert("Errore durante il salvataggio.");
     }
-
-    navigate("/dashboard/traceability/manage-lot");
   };
 
   const handleCancel = () => navigate("/dashboard/traceability/manage-lot");
 
   return (
     <div className="form-container">
-      <h1>Drying</h1>
+      <h2>Drying</h2>
       <form onSubmit={handleSubmit}>
+
+        <h3>Seleziona lotti dal Patio</h3>
         <table>
           <thead>
             <tr>
@@ -207,74 +170,63 @@ const Drying = () => {
                   />
                 </td>
                 <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
-                <td>{getDisplayVolume(lot)}</td>
+                <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
               </tr>
             ))}
             {patioLots.length === 0 && (
               <tr>
-                <td style={{ textAlign: "center", color: "red" }}>
-                  Nessun lotto disponibile
-                </td>
+                <td colSpan={5} className="empty-state">Nessun lotto disponibile</td>
               </tr>
             )}
           </tbody>
         </table>
-        <div className="lot-ranges">
-          {selectedLots.map((lot) => {
-            const baseVol = getDisplayVolume(lot);
-            const perc = lotVolumes[lot.id] || 0;
-            const usedVol = Math.round((perc / 100) * baseVol);
-            return (
-              <div key={lot.id} className="lot-range-group">
-                <label>
-                  <strong>
-                    {lot.type} –{" "}
-                    {new Date(lot.date).toLocaleDateString("it-IT")}
-                  </strong>
-                  <br />
-                  Perc: {perc}% ({usedVol} L)
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={perc}
-                    onChange={(e) =>
-                      handleSliderChange(lot, parseInt(e.target.value))
-                    }
-                  />
-                </label>
-              </div>
-            );
-          })}
 
-          <div
-            className="total-volume"
-            style={{ color: "black", margin: "1rem 0" }}
-          >
-            <p>
+        {/* Sliders lotti selezionati */}
+        {selectedLots.length > 0 && (
+          <div className="lot-ranges">
+            {selectedLots.map((lot) => {
+              const baseVol = getDisplayVolume(lot);
+              const perc = lotVolumes[lot.id] || 0;
+              const usedVol = Math.round((perc / 100) * baseVol);
+
+              return (
+                <div key={lot.id} className="lot-range-group">
+                  <label>
+                    <strong>{lot.type} – {new Date(lot.date).toLocaleDateString("it-IT")}</strong>
+                    <br />
+                    Perc: {perc}% ({usedVol.toLocaleString("it-IT")} L)
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={perc}
+                      onChange={(e) => handleSliderChange(lot, parseInt(e.target.value))}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+
+            <div className="total-volume-box">
               Volume totale selezionato:{" "}
-              <strong>{calculateTotalPartialVolume()} L</strong>
-            </p>
+              <strong>{calculateTotalPartialVolume().toLocaleString("it-IT")} L</strong>
+            </div>
           </div>
-        </div>
+        )}
 
         <label>
           Dryer:
           <select
             name="dryer"
             value={form.dryer}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, dryer: e.target.value }))
-            }
+            onChange={(e) => setForm((prev) => ({ ...prev, dryer: e.target.value }))}
             required
           >
             <option value="">Seleziona</option>
             {dryers.map((d, i) => (
-              <option key={i} value={d.name}>
-                {d.name}
-              </option>
+              <option key={i} value={d.name}>{d.name}</option>
             ))}
           </select>
         </label>
@@ -285,9 +237,7 @@ const Drying = () => {
             type="date"
             name="date"
             value={form.date}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, date: e.target.value }))
-            }
+            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
             required
           />
         </label>
@@ -298,9 +248,7 @@ const Drying = () => {
             type="time"
             name="timeIn"
             value={form.timeIn}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, timeIn: e.target.value }))
-            }
+            onChange={(e) => setForm((prev) => ({ ...prev, timeIn: e.target.value }))}
             required
           />
         </label>
@@ -309,20 +257,11 @@ const Drying = () => {
           <button
             type="submit"
             className="action-button"
-            disabled={
-              !form.dryer ||
-              !form.date ||
-              !form.timeIn ||
-              selectedLots.length === 0
-            }
+            disabled={!form.dryer || !form.date || !form.timeIn || selectedLots.length === 0}
           >
             Conferma
           </button>
-          <button
-            type="button"
-            className="action-button"
-            onClick={handleCancel}
-          >
+          <button type="button" className="action-button cancel" onClick={handleCancel}>
             Annulla
           </button>
         </div>

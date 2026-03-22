@@ -1,42 +1,42 @@
-
-
 /* App.css */
 
 body {
   background: linear-gradient(135deg, #181818, #666666);
   color: #ffffff;
   font-family: Arial, sans-serif;
-  display: flex;
-  justify-content: center;  
-  align-items: center; /*voce che rende centrato verticalmente nel body*/
   min-height: 100vh;
   margin: 0;
 }
 
+/* Solo per le pagine di login/home che non hanno form-container */
 .container h1 {
   font-size: 24px;
   margin-bottom: 20px;
 }
 
-form {
+/* Stili form globali SOLO per login/register — non interferiscono con Traceability */
+.login-form,
+.register-form {
   display: flex;
   flex-direction: column;
 }
 
-form label {
+.login-form label,
+.register-form label {
   margin-bottom: 10px;
   font-size: 14px;
 }
 
-form input,
-form select {
+.login-form input,
+.register-form input {
   padding: 10px;
   margin-bottom: 20px;
   border: none;
   border-radius: 4px;
 }
 
-form button {
+.login-form button,
+.register-form button {
   padding: 10px;
   background-color: #61dafb;
   border: none;
@@ -45,7 +45,7 @@ form button {
   cursor: pointer;
 }
 
-form button:hover {
+.login-form button:hover,
+.register-form button:hover {
   background-color: #21a1f1;
 }
-

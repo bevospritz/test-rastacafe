@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./Traceability.css";
+import "../Traceability.css";
 
 const Resting = () => {
   const [selectedLots, setSelectedLots] = useState([]);
@@ -18,19 +18,14 @@ const Resting = () => {
 
   const navigate = useNavigate();
 
-  //get patio lots and dryers
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/patio")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : res.data.data;
-
         const filtered = data
-          .filter(
-            (lot) => (lot.status || "").toLowerCase().trim() !== "finished",
-          )
+          .filter((lot) => (lot.status || "").toLowerCase().trim() !== "finished")
           .map((lot) => ({ ...lot, source: "patio" }));
-
         setPatioLots(filtered);
       })
       .catch((err) => {
@@ -42,20 +37,14 @@ const Resting = () => {
       .get("http://localhost:5000/api/dryer")
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : res.data.data;
-        console.log("DRYER DATA:", data);
-
         const filtered = data
-          .filter(
-            (lot) => (lot.status || "").toLowerCase().trim() !== "finished",
-          )
+          .filter((lot) => (lot.status || "").toLowerCase().trim() !== "finished")
           .map((lot) => ({ ...lot, source: "dryer" }));
-
         setDryerLots(filtered);
       })
       .catch((err) => console.error("Errore caricamento dryers:", err));
   }, []);
 
-  //get tulhas
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/elements")
@@ -66,79 +55,54 @@ const Resting = () => {
       .catch((err) => console.error("Errore caricamento tulhas:", err));
   }, []);
 
-  // Helper: get display volume based on status
   const getDisplayVolume = (lot) => {
     return lot.status === "split" && lot.partial_volume != null
       ? lot.partial_volume
       : lot.volume;
   };
 
-  // Toggle selection
+  const checkCDMix = (lot, currentSelected) => {
+    const hasCD = currentSelected.some((l) => l.type === "CD");
+    const isCD = lot.type === "CD";
+    const hasNonCD = currentSelected.some((l) => l.type !== "CD");
+
+    if (isCD && hasNonCD) {
+      return window.confirm(
+        "Attenzione: stai cercando di aggiungere un lotto CD a lotti di tipo diverso (Dry/Green/Natural).\n\nSei sicuro di voler mescolare i tipi?"
+      );
+    }
+    if (!isCD && hasCD) {
+      return window.confirm(
+        "Attenzione: stai cercando di aggiungere un lotto " + lot.type + " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?"
+      );
+    }
+    return true;
+  };
+
   const handleSelectPatioLot = (lot) => {
-    const exists = selectedLots.find(
-      (l) => l.id === lot.id && l.source === "patio",
-    );
+    const exists = selectedLots.find((l) => l.id === lot.id && l.source === "patio");
 
     if (exists) {
-      setSelectedLots((prev) =>
-        prev.filter((l) => !(l.id === lot.id && l.source === "patio")),
-      );
-
+      setSelectedLots((prev) => prev.filter((l) => !(l.id === lot.id && l.source === "patio")));
       setLotVolumes((prev) => {
         const updated = { ...prev };
-        delete updated[`${lot.source}-${lot.id}`];
+        delete updated[`patio-${lot.id}`];
         return updated;
       });
       return;
     }
 
-    const normalized = {
-      ...lot,
-      source: "patio",
-      patio_nLot: lot.patio_nLot,
-      dryer_nLot: null,
-    };
+    if (!checkCDMix(lot, selectedLots)) return;
 
-    // 🔽 LOGICA DI BLOCCO CD ↔ Green/Dry
-    const hasCD = selectedLots.some((l) => l.type === "CD");
-    const isCD = lot.type === "CD";
-    const hasNonCD = selectedLots.some((l) => l.type !== "CD");
-
-    // Se sto provando a selezionare un CD ma ho già Dry/Green → blocco
-    if (isCD && hasNonCD) {
-      alert(
-        "Non puoi mescolare lotti di tipo CD con altri tipi (Dry/Green/Natural).",
-      );
-      return;
-    }
-
-    // Se sto provando a selezionare un Dry/Green ma ho già CD → blocco
-    if (!isCD && hasCD) {
-      alert(
-        "Non puoi mescolare lotti di tipo CD con altri tipi (Dry/Green/Natural).",
-      );
-      return;
-    }
-
-    // Se tutto ok, seleziono normalmente
-    setSelectedLots((prev) => [...prev, normalized]);
-    setLotVolumes((prev) => ({
-      ...prev,
-      [`patio-${lot.id}`]: 100,
-    }));
+    setSelectedLots((prev) => [...prev, { ...lot, source: "patio", patio_nLot: lot.patio_nLot, dryer_nLot: null }]);
+    setLotVolumes((prev) => ({ ...prev, [`patio-${lot.id}`]: 100 }));
   };
 
-  // Toggle selection
   const handleSelectDryerLot = (lot) => {
-    const exists = selectedLots.find(
-      (l) => l.id === lot.id && l.source === "dryer",
-    );
+    const exists = selectedLots.find((l) => l.id === lot.id && l.source === "dryer");
 
     if (exists) {
-      setSelectedLots((prev) =>
-        prev.filter((l) => !(l.id === lot.id && l.source === "dryer")),
-      );
-
+      setSelectedLots((prev) => prev.filter((l) => !(l.id === lot.id && l.source === "dryer")));
       setLotVolumes((prev) => {
         const updated = { ...prev };
         delete updated[`dryer-${lot.id}`];
@@ -147,53 +111,16 @@ const Resting = () => {
       return;
     }
 
-    const normalized = {
-      ...lot,
-      source: "dryer",
-      dryer_nLot: lot.dryer,
-      patio_nLot: null,
-    };
+    if (!checkCDMix(lot, selectedLots)) return;
 
-    // 🔽 LOGICA DI BLOCCO CD ↔ Green/Dry
-    const hasCD = selectedLots.some((l) => l.type === "CD");
-    const isCD = lot.type === "CD";
-    const hasNonCD = selectedLots.some((l) => l.type !== "CD");
-
-    // Se sto provando a selezionare un CD ma ho già Dry/Green → blocco
-    if (isCD && hasNonCD) {
-      alert(
-        "Non puoi mescolare lotti di tipo CD con altri tipi (Dry/Green/Natural).",
-      );
-      return;
-    }
-
-    // Se sto provando a selezionare un Dry/Green ma ho già CD → blocco
-    if (!isCD && hasCD) {
-      alert(
-        "Non puoi mescolare lotti di tipo CD con altri tipi (Dry/Green/Natural).",
-      );
-      return;
-    }
-
-    // Se tutto ok, seleziono normalmente
-
-    setSelectedLots((prev) => [...prev, normalized]);
-
-    setLotVolumes((prev) => ({
-      ...prev,
-      [`dryer-${lot.id}`]: 100,
-    }));
+    setSelectedLots((prev) => [...prev, { ...lot, source: "dryer", dryer_nLot: lot.dryer_nLot, patio_nLot: null }]);
+    setLotVolumes((prev) => ({ ...prev, [`dryer-${lot.id}`]: 100 }));
   };
 
-  // Slider change only updates local state
   const handleSliderChange = (lot, value) => {
-    setLotVolumes((prev) => ({
-      ...prev,
-      [`${lot.source}-${lot.id}`]: value,
-    }));
+    setLotVolumes((prev) => ({ ...prev, [`${lot.source}-${lot.id}`]: value }));
   };
 
-  // Calculate total partial volume for submit
   const calculateTotalPartialVolume = () => {
     return selectedLots.reduce((sum, lot) => {
       const key = `${lot.source}-${lot.id}`;
@@ -203,12 +130,9 @@ const Resting = () => {
     }, 0);
   };
 
-  const totalVolume = calculateTotalPartialVolume();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-
     setIsSubmitting(true);
 
     try {
@@ -219,7 +143,7 @@ const Resting = () => {
 
       const restPayload = {
         tulha: form.tulha,
-        volume: totalVolume,
+        volume: calculateTotalPartialVolume(),
         dateIn: form.dateIn,
         timeIn: form.timeIn,
         lots: selectedLots.map((lot) => ({
@@ -228,63 +152,32 @@ const Resting = () => {
         })),
       };
 
-      console.log("REST PAYLOAD:", restPayload);
-
       const dryerPatchPayload = {
         lots: selectedLots
           .filter((lot) => lot.source === "dryer")
-          .map((lot) => {
-            const key = `${lot.source}-${lot.id}`;
-            return {
-              id: lot.id,
-              volumeUsed: Math.round(
-                (lotVolumes[key] / 100) * getDisplayVolume(lot),
-              ),
-            };
-          }),
+          .map((lot) => ({
+            id: lot.id,
+            volumeUsed: Math.round((lotVolumes[`dryer-${lot.id}`] / 100) * getDisplayVolume(lot)),
+          })),
       };
 
       const patioPatchPayload = {
         lots: selectedLots
           .filter((lot) => lot.source === "patio")
-          .map((lot) => {
-            const key = `${lot.source}-${lot.id}`;
-            return {
-              id: lot.id,
-              volumeUsed: Math.round(
-                (lotVolumes[key] / 100) * getDisplayVolume(lot),
-              ),
-            };
-          }),
+          .map((lot) => ({
+            id: lot.id,
+            volumeUsed: Math.round((lotVolumes[`patio-${lot.id}`] / 100) * getDisplayVolume(lot)),
+          })),
       };
 
-      const restRes = await axios.post(
-        "http://localhost:5000/api/rest",
-        restPayload,
-      );
+      const restRes = await axios.post("http://localhost:5000/api/rest", restPayload);
+      console.log("Payload inviato a /api/rest:", restRes.data);
 
       const patches = [];
-
-      if (dryerPatchPayload.lots.length > 0) {
-        patches.push(
-          axios.patch(
-            "http://localhost:5000/api/rest/update-lots",
-            dryerPatchPayload,
-          ),
-        );
-      }
-
-      if (patioPatchPayload.lots.length > 0) {
-        patches.push(
-          axios.patch(
-            "http://localhost:5000/api/patio/update-lots",
-            patioPatchPayload,
-          ),
-        );
-      }
-
-      console.log("Payload inviato a /api/rest:", restRes.data);
-      console.log("SELECTED LOTS:", selectedLots);
+      if (dryerPatchPayload.lots.length > 0)
+        patches.push(axios.patch("http://localhost:5000/api/rest/update-lots", dryerPatchPayload));
+      if (patioPatchPayload.lots.length > 0)
+        patches.push(axios.patch("http://localhost:5000/api/patio/update-lots", patioPatchPayload));
 
       await Promise.all(patches);
 
@@ -304,7 +197,8 @@ const Resting = () => {
     <div className="form-container">
       <h2>Resting</h2>
       <form onSubmit={handleSubmit}>
-        <h1>Patio</h1>
+
+        <h3>Patio</h3>
         <table>
           <thead>
             <tr>
@@ -321,30 +215,25 @@ const Resting = () => {
                 <td>
                   <input
                     type="checkbox"
-                    checked={
-                      !!selectedLots.find(
-                        (l) => l.id === lot.id && l.source === "patio",
-                      )
-                    }
+                    checked={!!selectedLots.find((l) => l.id === lot.id && l.source === "patio")}
                     onChange={() => handleSelectPatioLot(lot)}
                   />
                 </td>
                 <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
-                <td>{getDisplayVolume(lot)}</td>
+                <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
               </tr>
             ))}
             {patioLots.length === 0 && (
               <tr>
-                <td style={{ textAlign: "center", color: "red" }}>
-                  Nessun lotto disponibile
-                </td>
+                <td colSpan={5} className="empty-state">Nessun lotto disponibile</td>
               </tr>
             )}
           </tbody>
         </table>
-        <h2>Dryer</h2>
+
+        <h3>Dryer</h3>
         <table>
           <thead>
             <tr>
@@ -361,86 +250,69 @@ const Resting = () => {
                 <td>
                   <input
                     type="checkbox"
-                    checked={
-                      !!selectedLots.find(
-                        (l) => l.id === lot.id && l.source === "dryer",
-                      )
-                    }
+                    checked={!!selectedLots.find((l) => l.id === lot.id && l.source === "dryer")}
                     onChange={() => handleSelectDryerLot(lot)}
                   />
                 </td>
                 <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
-                <td>{getDisplayVolume(lot)}</td>
+                <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
               </tr>
             ))}
             {dryerLots.length === 0 && (
               <tr>
-                <td style={{ textAlign: "center", color: "red" }}>
-                  Nessun lotto disponibile
-                </td>
+                <td colSpan={5} className="empty-state">Nessun lotto disponibile</td>
               </tr>
             )}
           </tbody>
         </table>
-        <div className="lot-ranges">
-          {selectedLots.map((lot) => {
-            const baseVol = getDisplayVolume(lot);
-            const key = `${lot.source}-${lot.id}`;
-            const perc = lotVolumes[key] || 0;
-            const usedVol = Math.round((perc / 100) * baseVol);
 
-            return (
-              <div key={key} className="lot-range-group">
-                <label>
-                  <strong>
-                    {lot.type} –{" "}
-                    {new Date(lot.date).toLocaleDateString("it-IT")}
-                  </strong>
-                  <br />
-                  Perc: {perc}% ({usedVol} L)
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={perc}
-                    onChange={(e) =>
-                      handleSliderChange(lot, parseInt(e.target.value))
-                    }
-                  />
-                </label>
-              </div>
-            );
-          })}
+        {/* Sliders lotti selezionati */}
+        {selectedLots.length > 0 && (
+          <div className="lot-ranges">
+            {selectedLots.map((lot) => {
+              const baseVol = getDisplayVolume(lot);
+              const key = `${lot.source}-${lot.id}`;
+              const perc = lotVolumes[key] || 0;
+              const usedVol = Math.round((perc / 100) * baseVol);
 
-          <div
-            className="total-volume"
-            style={{ color: "black", margin: "1rem 0" }}
-          >
-            <p>
+              return (
+                <div key={key} className="lot-range-group">
+                  <label>
+                    <strong>{lot.type} – {new Date(lot.date).toLocaleDateString("it-IT")}</strong>
+                    <br />
+                    Perc: {perc}% ({usedVol.toLocaleString("it-IT")} L)
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={perc}
+                      onChange={(e) => handleSliderChange(lot, parseInt(e.target.value))}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+
+            <div className="total-volume-box">
               Volume totale selezionato:{" "}
-              <strong>{calculateTotalPartialVolume()} L</strong>
-            </p>
+              <strong>{calculateTotalPartialVolume().toLocaleString("it-IT")} L</strong>
+            </div>
           </div>
-        </div>
+        )}
 
         <label>
           Tulha:
           <select
             name="tulha"
             value={form.tulha}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, tulha: e.target.value }))
-            }
+            onChange={(e) => setForm((prev) => ({ ...prev, tulha: e.target.value }))}
             required
           >
             <option value="">Seleziona</option>
-
             {tulhas.map((d, i) => (
-              <option key={i} value={d.name}>
-                {d.name}
-              </option>
+              <option key={i} value={d.name}>{d.name}</option>
             ))}
           </select>
         </label>
@@ -451,9 +323,7 @@ const Resting = () => {
             type="date"
             name="dateIn"
             value={form.dateIn}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, dateIn: e.target.value }))
-            }
+            onChange={(e) => setForm((prev) => ({ ...prev, dateIn: e.target.value }))}
             required
           />
         </label>
@@ -464,9 +334,7 @@ const Resting = () => {
             type="time"
             name="timeIn"
             value={form.timeIn}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, timeIn: e.target.value }))
-            }
+            onChange={(e) => setForm((prev) => ({ ...prev, timeIn: e.target.value }))}
             required
           />
         </label>
@@ -475,20 +343,11 @@ const Resting = () => {
           <button
             type="submit"
             className="action-button"
-            disabled={
-              !form.tulha ||
-              !form.dateIn ||
-              !form.timeIn ||
-              selectedLots.length === 0
-            }
+            disabled={!form.tulha || !form.dateIn || !form.timeIn || selectedLots.length === 0}
           >
-            Conferma
+            {isSubmitting ? "Salvataggio..." : "Conferma"}
           </button>
-          <button
-            type="button"
-            className="action-button"
-            onClick={handleCancel}
-          >
+          <button type="button" className="action-button cancel" onClick={handleCancel}>
             Annulla
           </button>
         </div>

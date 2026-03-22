@@ -402,7 +402,6 @@ app.post("/api/excelplots", upload.single("file"), async (req, res) => {
     const rows = XLSX.utils.sheet_to_json(sheet);
 
     console.log("Righe importate:", rows.length);
-    ç;
 
     // Validazione base: almeno una riga e colonne necessarie
     const requiredFields = [
@@ -1324,62 +1323,49 @@ app.get("/api/restforcleaning", async (req, res) => {
   try {
     const query = `
       SELECT 
-  r.id AS rest_id,
-  r.tulha,
-  r.dateIn,
-  r.volume AS rest_volume,
-
-  -- dati patio diretti
-  p.date AS patio_date,
-  p.type AS patio_type,
-  p.volume AS patio_volume,
-
-  -- dati dryer
-  d.date AS dryer_date,
-  d.volume AS dryer_volume,
-  p2.type AS dryer_type
-
-FROM rest r
-
-JOIN rest_prevnlot rp 
-  ON r.id = rp.rest_id
-
-LEFT JOIN patio p
-  ON rp.prev_nLot_patio = p.patio_nLot
-
-LEFT JOIN dryer d
-  ON rp.prev_nLot_dryer = d.dryer
-
-LEFT JOIN dryer_prevnlot dp
-  ON d.id = dp.dryer_id
-
-LEFT JOIN patio p2
-  ON dp.prev_nLot_patio = p2.patio_nlot
-
-WHERE r.status = 'active'
-
-ORDER BY r.dateIn DESC;
- 
+        r.id AS rest_id,
+        r.tulha,
+        r.dateIn,
+        r.volume AS rest_volume,
+        r.rest_nLot,
+        p.date AS patio_date,
+        p.type AS patio_type,
+        p.volume AS patio_volume,
+        d.date AS dryer_date,
+        d.volume AS dryer_volume,
+        p2.type AS dryer_type
+      FROM rest r
+      JOIN rest_prevnlot rp ON r.id = rp.rest_id
+      LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
+      LEFT JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
+      LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+      LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nlot
+      WHERE r.status IN ('active', 'split')
+      ORDER BY r.tulha, r.dateIn ASC;
     `;
 
     const [rows] = await connection.query(query);
 
+    // Raggruppa per tulha (non per rest_id)
     const grouped = {};
 
     rows.forEach((row) => {
-      if (!grouped[row.rest_id]) {
-        grouped[row.rest_id] = {
-          rest_id: row.rest_id,
+      if (!grouped[row.tulha]) {
+        grouped[row.tulha] = {
           tulha: row.tulha,
-          dateIn: row.dateIn,
-          volume: row.rest_volume,
+          totalVolume: 0,
           lots: [],
         };
       }
 
-      grouped[row.rest_id].lots.push({
+      grouped[row.tulha].totalVolume += row.rest_volume;
+
+      grouped[row.tulha].lots.push({
+        rest_id: row.rest_id,
+        rest_nLot: row.rest_nLot,
+        dateIn: row.dateIn,
+        volume: row.rest_volume,
         date: row.patio_date || row.dryer_date,
-        volume: row.patio_volume || row.dryer_volume,
         type: row.patio_type || row.dryer_type,
         origin: row.patio_date ? "patio" : "dryer",
       });
@@ -1389,6 +1375,170 @@ ORDER BY r.dateIn DESC;
   } catch (err) {
     console.error("Errore /api/restforcleaning:", err);
     res.status(500).send("Errore recupero restforcleaning");
+  }
+});
+
+// GET deposits
+app.get("/api/deposits", async (req, res) => {
+  try {
+    const [results] = await connection.query("SELECT * FROM deposits");
+    res.status(200).json(results);
+  } catch (err) {
+    res.status(500).send("Errore recupero deposits");
+  }
+});
+
+// POST deposit
+app.post("/api/deposits", async (req, res) => {
+  const { name } = req.body;
+  try {
+    const [result] = await connection.query(
+      "INSERT INTO deposits (name) VALUES (?)",
+      [name],
+    );
+    res.status(201).json({ id: result.insertId, name });
+  } catch (err) {
+    res.status(500).send("Errore inserimento deposit");
+  }
+});
+
+// GET ultimo cleaning_nLot cleaning
+app.get("/api/cleaning/last-nlot", async (req, res) => {
+  try {
+    const [rows] = await connection.query(
+      "SELECT cleaning_nLot FROM cleaning ORDER BY cleaning_nLot DESC LIMIT 1",
+    );
+    res.json({
+      cleaning_nLot: rows.length > 0 ? rows[0].cleaning_nLot : "C00000",
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// POST cleaning
+app.post("/api/cleaning", async (req, res) => {
+  const {
+    date,
+    volume,
+    weight,
+    bigBag,
+    umidity,
+    cata,
+    deposit,
+    cleaning_nLot,
+    lots,
+  } = req.body;
+
+  try {
+    await connection.beginTransaction();
+
+    // 1. Inserisci in cleaning
+    const [ins] = await connection.query(
+      `INSERT INTO cleaning (date, volume, weight, bigBag, cleaning_nLot, umidity, cata, deposit)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        date,
+        volume,
+        weight,
+        bigBag,
+        cleaning_nLot,
+        umidity || null,
+        cata || null,
+        deposit || null,
+      ],
+    );
+    const cleaningId = ins.insertId;
+
+    // 2. Per ogni tulha, applica FIFO e registra in cleaning_prevnlot
+    for (const lot of lots) {
+      let remaining = lot.volumeUsed;
+
+      // Recupera i lotti della tulha ordinati FIFO (più vecchio prima)
+      const [tulhaLots] = await connection.query(
+        `SELECT id, rest_nLot, dateIn, timeIn, volume, partial_volume, status
+         FROM rest
+         WHERE id IN (?) AND tulha = ?
+         ORDER BY dateIn ASC, timeIn ASC`,
+        [lot.rest_ids, lot.tulha],
+      );
+
+      for (const row of tulhaLots) {
+        if (remaining <= 0) break;
+
+        const currentVolume =
+          row.status === "split" && row.partial_volume != null
+            ? row.partial_volume
+            : row.volume;
+
+        const consumed = Math.min(remaining, currentVolume);
+
+        // Registra in cleaning_prevnlot
+        await connection.query(
+          `INSERT INTO cleaning_prevnlot (cleaning_id, prev_nLot_rest, volume)
+           VALUES (?, ?, ?)`,
+          [cleaningId, row.rest_nLot, consumed],
+        );
+
+        // Aggiorna status del lotto rest
+        if (consumed >= currentVolume) {
+          await connection.query(
+            "UPDATE rest SET status = 'finished', partial_volume = NULL WHERE id = ?",
+            [row.id],
+          );
+        } else {
+          await connection.query(
+            "UPDATE rest SET status = 'split', partial_volume = ? WHERE id = ?",
+            [currentVolume - consumed, row.id],
+          );
+        }
+
+        remaining -= consumed;
+      }
+    }
+
+    await connection.commit();
+    res.status(201).json({
+      message: "Cleaning registrato",
+      cleaningId,
+      cleaning_nLot,
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Errore POST /api/cleaning:", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+// PATCH cleaning — aggiorna dati stocking
+app.patch("/api/cleaning/:id", async (req, res) => {
+  const { id } = req.params;
+  const { umidity, cata, weight_deposit, deposit } = req.body;
+
+  try {
+    await connection.query(
+      `UPDATE cleaning 
+       SET umidity = ?, cata = ?, weight_deposit = ?, deposit = ?
+       WHERE id = ?`,
+      [umidity || null, cata || null, weight_deposit || null, deposit || null, id]
+    );
+    res.status(200).json({ message: "Lotto aggiornato con successo" });
+  } catch (err) {
+    console.error("Errore PATCH /api/cleaning/:id", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+// GET cleaning — tutti i lotti puliti
+app.get("/api/cleaning", async (req, res) => {
+  try {
+    const [results] = await connection.query(
+      "SELECT * FROM cleaning ORDER BY date DESC"
+    );
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Errore GET /api/cleaning", err);
+    res.status(500).json({ error: "Errore interno" });
   }
 });
 

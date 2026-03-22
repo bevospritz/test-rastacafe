@@ -1,5 +1,5 @@
 import React from "react";
-import "./Traceability.css";
+import "../Traceability.css";
 
 const Selling = () => {  
 
