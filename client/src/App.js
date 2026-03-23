@@ -18,6 +18,7 @@ import Drying from "./Pages/Dashboard/traceability/Drying";
 import Resting from "./Pages/Dashboard/traceability/Resting";
 import Cleaning from "./Pages/Dashboard/traceability/Cleaning";
 import Stocking from "./Pages/Dashboard/traceability/Stocking";
+import LotHistory from "./Pages/Dashboard/traceability/Lothistory.js";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
@@ -31,18 +32,22 @@ const App = () => {
           <Route path="/dashboard/*" element={<Dashboard />}>
             <Route path="structure" element={<ManageFarm />} />
             <Route path="gestione-struttura" element={<GestioneStruttura />} />
-            <Route path="gestione-appezzamenti" element={<PlotsManagement />}/>
+            <Route path="gestione-appezzamenti" element={<PlotsManagement />} />
             <Route path="users" element={<Users />} />
-            <Route path="traceability/*" element={<Traceability />}>
+            <Route path="traceability/*" element={<Traceability />}>              
               <Route path="manage-lot" element={<ManageLot />} />
               <Route path="manage-lot/new-lot" element={<NewLot />} />
               <Route path="manage-lot/wash-devide" element={<WashDevide />} />
               <Route path="manage-lot/selling" element={<Selling />} />
-              <Route path="manage-lot/fermentation" element={<Fermentation />}/>
+              <Route
+                path="manage-lot/fermentation"
+                element={<Fermentation />}
+              />
               <Route path="manage-lot/drying" element={<Drying />} />
               <Route path="manage-lot/resting" element={<Resting />} />
               <Route path="manage-lot/cleaning" element={<Cleaning />} />
               <Route path="manage-lot/stocking" element={<Stocking />} />
+              <Route path="lot-history" element={<LotHistory />} />
             </Route>
           </Route>
         </Routes>

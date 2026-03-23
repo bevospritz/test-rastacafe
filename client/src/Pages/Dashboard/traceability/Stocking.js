@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "../Traceability.css";
 
+const PENEIRA_OPTIONS = ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"];
+const BEBIDA_OPTIONS = ["Strictly Soft", "Soft", "Softish", "Hard", "Riada", "Rioy", "Rio"];
+
 const Stocking = () => {
   const [lots, setLots] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -31,10 +34,19 @@ const Stocking = () => {
   const handleEdit = (lot) => {
     setEditingId(lot.id);
     setEditForm({
-      umidity: lot.umidity ?? "",
-      cata: lot.cata ?? "",
-      weight_deposit: lot.weight_deposit ?? "",
-      deposit: lot.deposit ?? "",
+      // Dati fattoria — ora modificabili
+      weight:          lot.weight          ?? "",
+      bags:            lot.bags            ?? "",
+      umidity:         lot.umidity         ?? "",
+      cata:            lot.cata            ?? "",
+      peneira:         lot.peneira         ?? "",
+      // Dati deposito
+      weight_deposit:  lot.weight_deposit  ?? "",
+      umidity_deposit: lot.umidity_deposit ?? "",
+      cata_deposit:    lot.cata_deposit    ?? "",
+      peneira_deposit: lot.peneira_deposit ?? "",
+      bebida:          lot.bebida          ?? "",
+      deposit:         lot.deposit         ?? "",
     });
   };
 
@@ -47,10 +59,19 @@ const Stocking = () => {
     setIsSaving(true);
     try {
       await axios.patch(`http://localhost:5000/api/cleaning/${id}`, {
-        umidity: editForm.umidity !== "" ? parseFloat(editForm.umidity) : null,
-        cata: editForm.cata !== "" ? parseInt(editForm.cata) : null,
-        weight_deposit: editForm.weight_deposit !== "" ? parseInt(editForm.weight_deposit) : null,
-        deposit: editForm.deposit || null,
+        // Dati fattoria
+        weight:          editForm.weight          !== "" ? parseInt(editForm.weight)            : null,
+        bags:            editForm.bags            !== "" ? parseInt(editForm.bags)              : null,
+        umidity:         editForm.umidity         !== "" ? parseFloat(editForm.umidity)         : null,
+        cata:            editForm.cata            !== "" ? parseInt(editForm.cata)              : null,
+        peneira:         editForm.peneira         || null,
+        // Dati deposito
+        weight_deposit:  editForm.weight_deposit  !== "" ? parseInt(editForm.weight_deposit)   : null,
+        umidity_deposit: editForm.umidity_deposit !== "" ? parseFloat(editForm.umidity_deposit) : null,
+        cata_deposit:    editForm.cata_deposit    !== "" ? parseInt(editForm.cata_deposit)      : null,
+        peneira_deposit: editForm.peneira_deposit || null,
+        bebida:          editForm.bebida          || null,
+        deposit:         editForm.deposit         || null,
       });
       setEditingId(null);
       fetchLots();
@@ -62,12 +83,9 @@ const Stocking = () => {
     }
   };
 
-  const formatDate = (d) =>
-    d ? new Date(d).toLocaleDateString("it-IT") : "-";
-
+  const formatDate = (d) => (d ? new Date(d).toLocaleDateString("it-IT") : "-");
   const isEditing = (id) => editingId === id;
 
-  // Componente riga info riutilizzabile
   const InfoRow = ({ label, value, editing, children }) => (
     <div className="info-row">
       <span className="info-label">{label}</span>
@@ -77,6 +95,10 @@ const Stocking = () => {
         </span>
       )}
     </div>
+  );
+
+  const SectionTitle = ({ children }) => (
+    <div className="info-section-title">{children}</div>
   );
 
   return (
@@ -94,13 +116,11 @@ const Stocking = () => {
             const editing = isEditing(lot.id);
 
             return (
-              <div
-                key={lot.id}
-                className={`tulha-card ${editing ? "editing" : ""}`}
-              >
-                {/* Header */}
-                <div style={{ marginBottom: "0.75rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div key={lot.id} className={`tulha-card ${editing ? "editing" : ""}`}>
+
+                {/* Header — volume e data sempre fissi */}
+                <div className="stocking-card-header">
+                  <div className="stocking-card-top">
                     <span className="tulha-card-title">{lot.cleaning_nLot}</span>
                     <span className={`badge ${lot.deposit ? "badge-deposit" : "badge-direct"}`}>
                       {lot.deposit || "Vendita diretta"}
@@ -111,33 +131,37 @@ const Stocking = () => {
 
                 <hr className="card-divider" />
 
-                {/* Campi non modificabili */}
+                {/* Volume — non modificabile */}
                 <InfoRow
                   label="Volume"
                   value={lot.volume ? `${lot.volume.toLocaleString("it-IT")} L` : null}
                 />
-                <InfoRow
-                  label="Peso fattoria"
-                  value={lot.weight ? `${lot.weight.toLocaleString("it-IT")} kg` : null}
-                />
-                <InfoRow label="Big Bags" value={lot.bigBag} />
 
                 <hr className="card-divider" />
 
-                {/* Campi modificabili */}
+                {/* Dati fattoria — modificabili */}
+                <SectionTitle>Dati fattoria</SectionTitle>
+
                 <InfoRow
-                  label="Peso deposito"
-                  value={lot.weight_deposit ? `${lot.weight_deposit.toLocaleString("it-IT")} kg` : null}
+                  label="Peso"
+                  value={lot.weight ? `${lot.weight.toLocaleString("it-IT")} kg` : null}
                   editing={editing}
                 >
-                  <input
-                    className="info-input"
-                    type="number"
-                    min="0"
-                    value={editForm.weight_deposit}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, weight_deposit: e.target.value }))}
-                    placeholder="kg"
-                  />
+                  <input className="info-input" type="number" min="0"
+                    value={editForm.weight}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, weight: e.target.value }))}
+                    placeholder="kg" />
+                </InfoRow>
+
+                <InfoRow
+                  label="Bags"
+                  value={lot.bags ?? null}
+                  editing={editing}
+                >
+                  <input className="info-input" type="number" min="0"
+                    value={editForm.bags}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, bags: e.target.value }))}
+                    placeholder="n°" />
                 </InfoRow>
 
                 <InfoRow
@@ -145,16 +169,10 @@ const Stocking = () => {
                   value={lot.umidity != null ? `${lot.umidity}%` : null}
                   editing={editing}
                 >
-                  <input
-                    className="info-input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
+                  <input className="info-input" type="number" min="0" max="100" step="0.1"
                     value={editForm.umidity}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, umidity: e.target.value }))}
-                    placeholder="%"
-                  />
+                    placeholder="%" />
                 </InfoRow>
 
                 <InfoRow
@@ -162,15 +180,84 @@ const Stocking = () => {
                   value={lot.cata != null ? `${lot.cata}%` : null}
                   editing={editing}
                 >
-                  <input
-                    className="info-input"
-                    type="number"
-                    min="0"
-                    max="100"
+                  <input className="info-input" type="number" min="0" max="100"
                     value={editForm.cata}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, cata: e.target.value }))}
-                    placeholder="%"
-                  />
+                    placeholder="%" />
+                </InfoRow>
+
+                <InfoRow
+                  label="Peneira"
+                  value={lot.peneira || null}
+                  editing={editing}
+                >
+                  <select className="info-select" value={editForm.peneira}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, peneira: e.target.value }))}>
+                    <option value="">—</option>
+                    {PENEIRA_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </InfoRow>
+
+                <hr className="card-divider" />
+
+                {/* Dati deposito — modificabili */}
+                <SectionTitle>Dati deposito</SectionTitle>
+
+                <InfoRow
+                  label="Peso"
+                  value={lot.weight_deposit ? `${lot.weight_deposit.toLocaleString("it-IT")} kg` : null}
+                  editing={editing}
+                >
+                  <input className="info-input" type="number" min="0"
+                    value={editForm.weight_deposit}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, weight_deposit: e.target.value }))}
+                    placeholder="kg" />
+                </InfoRow>
+
+                <InfoRow
+                  label="Umidità"
+                  value={lot.umidity_deposit != null ? `${lot.umidity_deposit}%` : null}
+                  editing={editing}
+                >
+                  <input className="info-input" type="number" min="0" max="100" step="0.1"
+                    value={editForm.umidity_deposit}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, umidity_deposit: e.target.value }))}
+                    placeholder="%" />
+                </InfoRow>
+
+                <InfoRow
+                  label="Cata"
+                  value={lot.cata_deposit != null ? `${lot.cata_deposit}%` : null}
+                  editing={editing}
+                >
+                  <input className="info-input" type="number" min="0" max="100"
+                    value={editForm.cata_deposit}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, cata_deposit: e.target.value }))}
+                    placeholder="%" />
+                </InfoRow>
+
+                <InfoRow
+                  label="Peneira"
+                  value={lot.peneira_deposit || null}
+                  editing={editing}
+                >
+                  <select className="info-select" value={editForm.peneira_deposit}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, peneira_deposit: e.target.value }))}>
+                    <option value="">—</option>
+                    {PENEIRA_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </InfoRow>
+
+                <InfoRow
+                  label="Bebida"
+                  value={lot.bebida || null}
+                  editing={editing}
+                >
+                  <select className="info-select" value={editForm.bebida}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, bebida: e.target.value }))}>
+                    <option value="">—</option>
+                    {BEBIDA_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
                 </InfoRow>
 
                 <InfoRow
@@ -178,11 +265,8 @@ const Stocking = () => {
                   value={lot.deposit || null}
                   editing={editing}
                 >
-                  <select
-                    className="info-select"
-                    value={editForm.deposit}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, deposit: e.target.value }))}
-                  >
+                  <select className="info-select" value={editForm.deposit}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, deposit: e.target.value }))}>
                     <option value="">— Vendita diretta —</option>
                     {deposits.map((d) => (
                       <option key={d.id} value={d.name}>{d.name}</option>
@@ -194,26 +278,15 @@ const Stocking = () => {
                 <div className="card-actions">
                   {editing ? (
                     <>
-                      <button
-                        className="action-button save"
-                        onClick={() => handleSave(lot.id)}
-                        disabled={isSaving}
-                      >
+                      <button className="action-button save" onClick={() => handleSave(lot.id)} disabled={isSaving}>
                         {isSaving ? "Salvataggio..." : "Salva"}
                       </button>
-                      <button
-                        className="action-button cancel"
-                        onClick={handleCancel}
-                        disabled={isSaving}
-                      >
+                      <button className="action-button cancel" onClick={handleCancel} disabled={isSaving}>
                         Annulla
                       </button>
                     </>
                   ) : (
-                    <button
-                      className="action-button"
-                      onClick={() => handleEdit(lot)}
-                    >
+                    <button className="action-button" onClick={() => handleEdit(lot)}>
                       Modifica
                     </button>
                   )}

@@ -86,6 +86,29 @@ const CARDS = [
       </tr>
     ),
   },
+  {
+    key: "stocking",
+    title: "Stocking",
+    endpoint: "/api/stockingcard",
+    empty: "Nessun lotto stoccato",
+    columns: ["Data", "Lotto", "Talhão", "Bags", "Tipo", "Deposito"],
+    renderRow: (s) => (
+      <tr key={s.id}>
+        <td>{new Date(s.date).toLocaleDateString("it-IT")}</td>
+        <td>{s.name}</td>
+        <td>{s.plots || "—"}</td>
+        <td>{s.bags ?? "—"}</td>
+        <td>{s.type || "—"}</td>
+        <td>
+          {s.deposit || (
+            <span style={{ color: "#aaa", fontStyle: "italic" }}>
+              Vendita diretta
+            </span>
+          )}
+        </td>
+      </tr>
+    ),
+  },
 ];
 
 const Traceability = () => {
@@ -96,13 +119,17 @@ const Traceability = () => {
     dryers: [],
     fermentations: [],
     rests: [],
+    stocking: [],
   });
 
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    setShowTraceability(!location.pathname.includes("manage-lot"));
+    setShowTraceability(
+      !location.pathname.includes("manage-lot") &&
+        !location.pathname.includes("lot-history"),
+    );
   }, [location]);
 
   useEffect(() => {
@@ -117,7 +144,7 @@ const Traceability = () => {
             }));
           })
           .catch((err) =>
-            console.error(`Errore caricamento ${card.title}:`, err)
+            console.error(`Errore caricamento ${card.title}:`, err),
           );
       });
     };

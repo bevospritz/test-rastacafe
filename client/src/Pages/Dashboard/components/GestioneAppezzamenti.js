@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Modal from "react-modal";
 import { useDropzone } from "react-dropzone";
+import "../Traceability.css";
 import "./GestioneAppezzamenti.css";
 
 Modal.setAppElement("#root");
@@ -10,148 +11,144 @@ const PlotsManagement = () => {
   const [farms, setFarms] = useState([]);
   const [plots, setPlots] = useState([]);
   const [showFormPlot, setShowFormPlot] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newCodename, setNewCodename] = useState("");
-  const [newVariety, setNewVariety] = useState("");
-  const [newNcovas, setNewNcovas] = useState("");
-  const [newDistance, setNewDistance] = useState("");
-  const [newSurface, setNewSurface] = useState("");
-  const [newAge, setNewAge] = useState("");
-  const [newState, setNewState] = useState("");
-  const [newIrrigation, setNewIrrigation] = useState("");
-  const [newRenda, setNewRenda] = useState("");
+  const [showEditPlot, setShowEditPlot] = useState(false);
+  const [editingPlot, setEditingPlot] = useState(null);
+  const [editForm, setEditForm] = useState({ state: "", irrigation: "", renda_forecast: "" });
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState(null);
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "ascending",
-  }); //sort
-  const [filterText, setFilterText] = useState(""); //filter
-  const [isUploading, setIsUploading] = useState(false); //drag and drop
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "ascending" });
+  const [filterText, setFilterText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [newPlot, setNewPlot] = useState({
+    name: "", codename: "", variety: "", ncovas: "",
+    distance: "", surface: "", age: "", state: "",
+    irrigation: "", renda: "",
+  });
 
   useEffect(() => {
-    // Fetch data da farms
     axios.get("http://localhost:5000/api/farm").then((response) => {
-      console.log("Response data:", response.data);
       if (Array.isArray(response.data) && response.data.length > 0) {
         setFarms(response.data);
-
         setSelectedFarm(response.data[0]);
-        console.log("Farm selezionata di default:", response.data[0]);
-      } else {
-        console.error("Response is not an array or empty:", response.data);
       }
-    });
-    // Fetch data da plots
-    axios
-      .get("http://localhost:5000/api/plots")
-      .then((response) => {
-        console.log("Response data (Plots):", response.data);
-        if (Array.isArray(response.data)) {
-          setPlots(response.data);
-        } else {
-          console.error("Response is not an array:", response.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching Plots:", error);
-      });
+    }).catch((err) => console.error("Error fetching farms:", err));
+
+    axios.get("http://localhost:5000/api/plots").then((response) => {
+      if (Array.isArray(response.data)) setPlots(response.data);
+    }).catch((err) => console.error("Error fetching plots:", err));
   }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setNewPlot((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleAddPlot = (e) => {
     e.preventDefault();
     if (!selectedFarm) {
-      console.error("Nessuna farm selezionata");
+      alert("Nessuna farm selezionata.");
       return;
     }
 
     const plotData = {
-      name: newName,
-      codename: newCodename,
-      variety: newVariety,
-      ncovas: newNcovas,
-      distance: newDistance,
-      surface: newSurface,
-      age: newAge,
-      state: newState,
-      irrigation: newIrrigation,
-      renda_forecast: newRenda,
+      name: newPlot.name,
+      codename: newPlot.codename,
+      variety: newPlot.variety,
+      ncovas: newPlot.ncovas,
+      distance: newPlot.distance,
+      surface: newPlot.surface,
+      age: newPlot.age,
+      state: newPlot.state,
+      irrigation: newPlot.irrigation,
+      renda_forecast: newPlot.renda,
       farmId: selectedFarm.id,
     };
 
-    console.log("Dati inviati al server:", plotData);
-
-    axios
-      .post("http://localhost:5000/api/plots", plotData)
+    axios.post("http://localhost:5000/api/plots", plotData)
       .then((response) => {
-        console.log("Risposta dal server:", response.data);
         setPlots([...plots, response.data]);
-        setNewName("");
-        setNewCodename("");
-        setNewVariety("");
-        setNewNcovas("");
-        setNewDistance("");
-        setNewSurface("");
-        setNewAge("");
-        setNewState("");
-        setNewIrrigation("");
-        setNewRenda("");
+        setNewPlot({ name: "", codename: "", variety: "", ncovas: "", distance: "", surface: "", age: "", state: "", irrigation: "", renda: "" });
         setShowFormPlot(false);
-        alert("Talhão inserito");
+        alert("Talhão inserito con successo!");
       })
       .catch((error) => {
-        console.error("Error adding new plot:", error);
-        alert("Errore nell'inserimento del talhão" + error.message);
+        console.error("Error adding plot:", error);
+        alert("Errore nell'inserimento del talhão: " + error.message);
       });
   };
 
   const handleDeletePlot = (plotId) => {
-    axios
-      .delete(`http://localhost:5000/api/plots/${plotId}`)
-      .then(() => {
-        setPlots(plots.filter((elem) => elem.id !== plotId));
-      })
-      .catch((error) => {
-        console.error("Error deleting elemento:", error);
+    if (!window.confirm("Sei sicuro di voler eliminare questo appezzamento?")) return;
+    axios.delete(`http://localhost:5000/api/plots/${plotId}`)
+      .then(() => setPlots(plots.filter((p) => p.id !== plotId)))
+      .catch((err) => console.error("Error deleting plot:", err));
+  };
+
+  // Apri modal modifica
+  const handleOpenEdit = (plot) => {
+    setEditingPlot(plot);
+    setEditForm({
+      state: plot.state ?? "",
+      irrigation: plot.irrigation ?? "",
+      renda_forecast: plot.renda_forecast ?? "",
+    });
+    setShowEditPlot(true);
+  };
+
+  // Salva modifiche
+  const handleSaveEdit = async () => {
+    if (!editingPlot) return;
+    setIsSaving(true);
+    try {
+      await axios.patch(`http://localhost:5000/api/plots/${editingPlot.id}`, {
+        state: editForm.state || null,
+        irrigation: editForm.irrigation || null,
+        renda_forecast: editForm.renda_forecast !== "" ? parseFloat(editForm.renda_forecast) : null,
       });
+      // Aggiorna lo stato locale
+      setPlots((prev) =>
+        prev.map((p) =>
+          p.id === editingPlot.id
+            ? { ...p, state: editForm.state, irrigation: editForm.irrigation, renda_forecast: editForm.renda_forecast }
+            : p
+        )
+      );
+      setShowEditPlot(false);
+      setEditingPlot(null);
+    } catch (err) {
+      console.error("Errore salvataggio plot:", err);
+      alert("Errore durante il salvataggio.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleCancel = () => {
-    setShowFormPlot(false);
-  };
-
-  //sort and filter results
-  const sortedPlots = [...plots].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === "ascending" ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === "ascending" ? 1 : -1;
-    }
-    return 0;
-  });
-
+  // Sort e filter
   const requestSort = (key) => {
-    let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "ascending" ? "descending" : "ascending",
+    }));
   };
 
-  const filteredPlots = sortedPlots.filter((plot) =>
-    plot.name.toLowerCase().includes(filterText.toLowerCase())
-  );
+  const sortArrow = (key) => {
+    if (sortConfig.key !== key) return " ↕";
+    return sortConfig.direction === "ascending" ? " ↑" : " ↓";
+  };
 
+  const filteredPlots = [...plots]
+    .sort((a, b) => {
+      if (!sortConfig.key) return 0;
+      if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "ascending" ? -1 : 1;
+      if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "ascending" ? 1 : -1;
+      return 0;
+    })
+    .filter((plot) => plot.name?.toLowerCase().includes(filterText.toLowerCase()));
+
+  // Dropzone
   const onDrop = async (acceptedFiles) => {
     const file = acceptedFiles[0];
-    if (!file) return;
-
-    if (!selectedFarm) {
-      alert(
-        "⚠️ Nessuna farm disponibile! Impossibile caricare gli appezzamenti."
-      );
-      return;
-    }
+    if (!file || !selectedFarm) return;
 
     const formData = new FormData();
     formData.append("file", file);
@@ -159,349 +156,253 @@ const PlotsManagement = () => {
 
     try {
       setIsUploading(true);
-      const res = await axios.post(
-        "http://localhost:5000/api/excelplots",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
+      const res = await axios.post("http://localhost:5000/api/excelplots", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert(`✅ ${res.data.message || "File caricato correttamente!"}`);
-
       const updated = await axios.get("http://localhost:5000/api/plots");
       setPlots(updated.data);
     } catch (err) {
-      console.error("Errore durante l'upload:", err);
-      alert(
-        `❌ Errore durante il caricamento: ${
-          err.response?.data?.message || err.message
-        }`
-      );
+      alert(`❌ Errore: ${err.response?.data?.message || err.message}`);
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Configurazione dropzone
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
-      ],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
       "application/vnd.ms-excel": [".xls"],
     },
   });
 
   return (
-    <div className="gestione-appezzamenti">
-      <input
-        type="text"
-        placeholder="Filtrar por nome..."
-        value={filterText}
-        onChange={(e) => setFilterText(e.target.value)}
-      />
+    <div className="form-container plots-container">
+      <h2>Gestione Appezzamenti</h2>
+
+      {/* Filtro */}
+      <div className="plots-filter-bar">
+        <input
+          type="text"
+          placeholder="Filtra per nome..."
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          className="plots-filter-input"
+        />
+        <button
+          className="action-button"
+          style={{ width: "auto", marginTop: 0, padding: "8px 20px" }}
+          onClick={() => { setShowFormPlot(true); setSelectedFarm(farms[0]); }}
+        >
+          + Aggiungi Talhão
+        </button>
+      </div>
+
       {farms.map((farm) => (
-        <div key={farm.id} className="farm-section-appezzamenti">
-          <div className="farm-header-appezzamenti">
-            <h1 className="farm-title-appezzamenti">{farm.name}</h1>
+        <div key={farm.id}>
+          <h3>{farm.name}</h3>
 
-            {/*  INIZIO DRAG & DROP */}
-            <div
-              {...getRootProps()}
-              style={{
-                border: `2px dashed ${
-                  !selectedFarm ? "#ccc" : isDragActive ? "#00897b" : "#888"
-                }`,
-                color: !selectedFarm ? "#bbb" : "black",
-                borderRadius: "10px",
-                padding: "25px",
-                textAlign: "center",
-                margin: "15px 0 30px",
-                background: isDragActive
-                  ? "#e0f7fa"
-                  : !selectedFarm
-                  ? "#f9f9f9"
-                  : "#fafafa",
-                cursor: !selectedFarm ? "not-allowed" : "pointer",
-                opacity: isUploading ? 0.6 : 1,
-                pointerEvents: isUploading ? "none" : "auto",
-                transition: "all 0.2s ease-in-out",
-              }}
-            >
-              <input
-                {...getInputProps()}
-                disabled={!selectedFarm || isUploading}
-              />
-
-              {!selectedFarm ? (
-                <p>
-                  ⚠️ Seleziona prima una <strong>fattoria</strong> per importare
-                  un file Excel
-                </p>
-              ) : isUploading ? (
-                <p>⏳ Caricamento in corso, attendi qualche secondo...</p>
-              ) : isDragActive ? (
-                <p>
-                  📂 Rilascia qui il file Excel per importare gli appezzamenti
-                </p>
-              ) : (
-                <p>
-                  📁 Trascina qui il file Excel o <strong>clicca</strong> per
-                  selezionarlo
-                </p>
-              )}
-            </div>
-
-            {/* ⬆️ FINE DRAG & DROP */}
-
-            <div className="action-buttons">
-              <button
-                className="modify-button"
-                onClick={() => {
-                  setShowFormPlot(true);
-                  setSelectedFarm(farm);
-                }}
-              >
-                +
-              </button>
-            </div>
+          {/* Dropzone */}
+          <div
+            {...getRootProps()}
+            className={`plots-dropzone ${isDragActive ? "active" : ""} ${isUploading ? "uploading" : ""} ${!selectedFarm ? "disabled" : ""}`}
+          >
+            <input {...getInputProps()} disabled={!selectedFarm || isUploading} />
+            {!selectedFarm ? (
+              <p>⚠️ Seleziona prima una fattoria per importare un file Excel</p>
+            ) : isUploading ? (
+              <p>⏳ Caricamento in corso...</p>
+            ) : isDragActive ? (
+              <p>📂 Rilascia qui il file Excel</p>
+            ) : (
+              <p>📁 Trascina un file Excel o <strong>clicca</strong> per selezionarlo</p>
+            )}
           </div>
-          <div className="element-table-wrapper">
-            <table className="element-table">
+
+          {/* Tabella */}
+          <div className="plots-table-wrapper">
+            <table>
               <thead>
                 <tr>
-                  <th onClick={() => requestSort("name")}>Nome</th>
-                  <th onClick={() => requestSort("codename")}>Codice</th>
-                  <th onClick={() => requestSort("variety")}>Varietà</th>
-                  <th onClick={() => requestSort("ncovas")}>Covas</th>
-                  <th onClick={() => requestSort("distance")}>Distanza</th>
-                  <th onClick={() => requestSort("surface")}>Superficie</th>
-                  <th onClick={() => requestSort("age")}>Età</th>
-                  <th onClick={() => requestSort("state")}>Stato</th>
-                  <th onClick={() => requestSort("irrigation")}>Irrigazione</th>
-                  <th onClick={() => requestSort("renda_forecast")}>
-                    Renda Stim.
-                  </th>
-                  <th onClick={() => requestSort("volume_harvested")}>
-                    Volume Rac.
-                  </th>
-                  <th onClick={() => requestSort("renda_actual")}>
-                    Renda Att.
-                  </th>
+                  {["name","codename","variety","ncovas","distance","surface","age","state","irrigation","renda_forecast","volume_harvested","renda_actual"].map((col) => (
+                    <th key={col} onClick={() => requestSort(col)} className="plots-th-sortable">
+                      {col.charAt(0).toUpperCase() + col.slice(1).replace("_", " ")}{sortArrow(col)}
+                    </th>
+                  ))}
                   <th>Azioni</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredPlots.map((plot) => (
-                  <tr key={plot.id}>
-                    <td>{plot.name}</td>
-                    <td>{plot.codename}</td>
-                    <td>{plot.variety}</td>
-                    <td>{plot.ncovas}</td>
-                    <td>{plot.distance}</td>
-                    <td>{plot.surface}</td>
-                    <td>{plot.age}</td>
-                    <td>{plot.state}</td>
-                    <td>{plot.irrigation}</td>
-                    <td>{plot.renda_forecast}</td>
-                    <td>{plot.volume_harvested}</td>
-                    <td>{plot.renda_actual}</td>
-                    <td>
-                      <button
-                        className="delete-button"
-                        onClick={() => handleDeletePlot(plot.id)}
-                      >
-                        X
-                      </button>
-                    </td>
+                {filteredPlots
+                  .filter((p) => p.farmId === farm.id)
+                  .map((plot) => (
+                    <tr key={plot.id}>
+                      <td>{plot.name}</td>
+                      <td>{plot.codename}</td>
+                      <td>{plot.variety}</td>
+                      <td>{plot.ncovas}</td>
+                      <td>{plot.distance}</td>
+                      <td>{plot.surface}</td>
+                      <td>{plot.age}</td>
+                      <td>{plot.state}</td>
+                      <td>{plot.irrigation}</td>
+                      <td>{plot.renda_forecast}</td>
+                      <td>{plot.volume_harvested}</td>
+                      <td>{plot.renda_actual}</td>
+                      <td className="plots-actions-cell">
+                        <button
+                          className="action-button plots-edit-btn"
+                          onClick={() => handleOpenEdit(plot)}
+                        >
+                          Modifica
+                        </button>
+                        <button
+                          className="action-button plots-delete-btn"
+                          onClick={() => handleDeletePlot(plot.id)}
+                        >
+                          Elimina
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                {filteredPlots.filter((p) => p.farmId === farm.id).length === 0 && (
+                  <tr>
+                    <td colSpan={13} className="empty-state">Nessun appezzamento trovato</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
       ))}
 
+      {/* Modal nuovo talhão */}
       <Modal
         isOpen={showFormPlot}
         onRequestClose={() => setShowFormPlot(false)}
-        contentLabel="Adicionar Talhão"
-        className="modal-appezzamenti"
-        overlayClassName="overlay"
+        contentLabel="Aggiungi Talhão"
+        className="modal-content"
+        overlayClassName="modal"
       >
-        <h2>Adicionar Talhão</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAddPlot();
-          }}
-          className="form"
-        >
-          <div className="form-group">
-            <label htmlFor="name">Nome:</label>
-            <input
-              id="name"
-              placeholder="Nome do talhão"
-              type="text"
-              value={newName}
-              onChange={(e) => {
-                const clean = e.target.value.replace().toUpperCase();
-                setNewCodename(clean);
-              }}
-              maxLength="50"
-              tabIndex={1}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="codename">Codice:</label>
-            <input
-              id="codename"
-              placeholder="Codigo do talhao Ex. P12"
-              type="text"
-              value={newCodename}
-              onChange={(e) => {
-                const clean = e.target.value.replace(/\s+/g, "").toUpperCase();
-                setNewCodename(clean);
-              }}
-              maxLength="10"
-              tabIndex={2}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="variety">Varietà:</label>
-            <input
-              id="variety"
-              placeholder="Ex. Catuai"
-              type="text"
-              value={newVariety}
-              onChange={(e) => setNewVariety(e.target.value)}
-              maxLength="45"
-              tabIndex={3}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="ncovas">N° Covas:</label>
-            <input
-              id="ncovas"
-              placeholder="Ex. 12050"
-              type="text"
-              value={newNcovas}
-              onChange={(e) => setNewNcovas(e.target.value)}
-              maxLength="10"
-              tabIndex={4}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="distance">Distanziamento cm:</label>
-            <input
-              id="distance"
-              placeholder="Ex. 280"
-              type="text"
-              value={newDistance}
-              onChange={(e) => setNewDistance(e.target.value)}
-              maxLength="10"
-              tabIndex={5}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="surface">Superficie ha:</label>
-            <input
-              id="surface"
-              placeholder="Ex. 10.25"
-              type="text"
-              value={newSurface}
-              onChange={(e) => setNewSurface(e.target.value)}
-              maxLength="10"
-              tabIndex={6}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="age">Età:</label>
-            <input
-              id="age"
-              placeholder="Ex. 2016"
-              type="year"
-              value={newAge}
-              onChange={(e) => setNewAge(e.target.value)}
-              maxLength="4"
-              minLength="4"
-              tabIndex={7}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="state">Stato:</label>
+        <div className="modal-header">
+          <h2>Aggiungi Talhão</h2>
+        </div>
+        <div className="modal-body">
+          <form onSubmit={handleAddPlot}>
+            <label>Nome:
+              <input type="text" name="name" value={newPlot.name} onChange={handleChange} placeholder="Nome del talhão" maxLength="50" required />
+            </label>
+            <label>Codice:
+              <input type="text" name="codename" value={newPlot.codename}
+                onChange={(e) => setNewPlot((prev) => ({ ...prev, codename: e.target.value.replace(/\s+/g, "").toUpperCase() }))}
+                placeholder="Es. P12" maxLength="10" required />
+            </label>
+            <label>Varietà:
+              <input type="text" name="variety" value={newPlot.variety} onChange={handleChange} placeholder="Es. Catuai" maxLength="45" />
+            </label>
+            <label>N° Covas:
+              <input type="number" name="ncovas" value={newPlot.ncovas} onChange={handleChange} placeholder="Es. 12050" />
+            </label>
+            <label>Distanziamento (cm):
+              <input type="number" name="distance" value={newPlot.distance} onChange={handleChange} placeholder="Es. 280" />
+            </label>
+            <label>Superficie (ha):
+              <input type="number" name="surface" value={newPlot.surface} onChange={handleChange} placeholder="Es. 10.25" step="0.01" />
+            </label>
+            <label>Anno impianto:
+              <input type="number" name="age" value={newPlot.age} onChange={handleChange} placeholder="Es. 2016" min="1900" max="2100" />
+            </label>
+            <label>Stato:
+              <select name="state" value={newPlot.state} onChange={handleChange}>
+                <option value="">Seleziona</option>
+                <option value="raccolta">Raccolta</option>
+                <option value="potato">Potato</option>
+                <option value="formazione">Formazione</option>
+              </select>
+            </label>
+            <label>Irrigazione:</label>
+            <div style={{ display: "flex", gap: "1.5rem", marginBottom: "10px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="radio" name="irrigation" value="Yes" checked={newPlot.irrigation === "Yes"} onChange={handleChange} /> Sì
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="radio" name="irrigation" value="No" checked={newPlot.irrigation === "No"} onChange={handleChange} /> No
+              </label>
+            </div>
+            <label>Renda Stimata:
+              <input type="number" name="renda" value={newPlot.renda} onChange={handleChange} placeholder="Es. 5.24" step="0.01" />
+            </label>
+            <div className="modal-footer">
+              <button type="button" className="action-button cancel" onClick={() => setShowFormPlot(false)}>Annulla</button>
+              <button type="submit" className="action-button save">Inserisci</button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      {/* Modal modifica talhão */}
+      <Modal
+        isOpen={showEditPlot}
+        onRequestClose={() => setShowEditPlot(false)}
+        contentLabel="Modifica Talhão"
+        className="modal-content"
+        overlayClassName="modal"
+      >
+        <div className="modal-header">
+          <h2>Modifica — {editingPlot?.codename}</h2>
+        </div>
+        <div className="modal-body">
+          <label>Stato:
             <select
-              id="state"
-              value={newState}
-              onChange={(e) => setNewState(e.target.value)}
-              tabIndex={8}
+              value={editForm.state}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, state: e.target.value }))}
             >
               <option value="">Seleziona</option>
               <option value="raccolta">Raccolta</option>
               <option value="potato">Potato</option>
               <option value="formazione">Formazione</option>
             </select>
+          </label>
+
+          <label>Irrigazione:</label>
+          <div style={{ display: "flex", gap: "1.5rem", marginBottom: "10px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <input
+                type="radio"
+                value="Yes"
+                checked={editForm.irrigation === "Yes"}
+                onChange={() => setEditForm((prev) => ({ ...prev, irrigation: "Yes" }))}
+              /> Sì
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <input
+                type="radio"
+                value="No"
+                checked={editForm.irrigation === "No"}
+                onChange={() => setEditForm((prev) => ({ ...prev, irrigation: "No" }))}
+              /> No
+            </label>
           </div>
-          <div className="form-group">
-            <label>Irrigazione:</label>
-            <div>
-              <div className="custom-radio">
-                <input
-                  id="irrigation-yes"
-                  type="radio"
-                  value="Yes"
-                  checked={newIrrigation === "Yes"}
-                  onChange={(e) => setNewIrrigation(e.target.value)}
-                  tabIndex={9}
-                />
-                <label htmlFor="irrigation-yes">Yes</label>
-              </div>
-              <div className="custom-radio">
-                <input
-                  id="irrigation-no"
-                  type="radio"
-                  value="No"
-                  checked={newIrrigation === "No"}
-                  onChange={(e) => setNewIrrigation(e.target.value)}
-                  tabIndex={10}
-                />
-                <label htmlFor="irrigation-no">No</label>
-              </div>
-            </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="renda">Renda Stimata:</label>
+
+          <label>Renda Stimata:
             <input
-              id="renda"
-              placeholder="Ex. 5.24"
-              type="text"
-              value={newRenda}
-              onChange={(e) => setNewRenda(e.target.value)}
-              maxLength="10"
-              tabIndex={11}
+              type="number"
+              value={editForm.renda_forecast}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, renda_forecast: e.target.value }))}
+              placeholder="Es. 5.24"
+              step="0.01"
             />
-          </div>
-          <div className="form-actions">
-            <button
-              type="submit"
-              className="submit-button"
-              onClick={handleAddPlot}
-              tabIndex={12}
-            >
-              Inserisci
-            </button>
-            <button
-              type="cancel"
-              onClick={handleCancel}
-              className="cancel-button"
-              tabIndex={13}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+          </label>
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="action-button cancel" onClick={() => setShowEditPlot(false)}>
+            Annulla
+          </button>
+          <button type="button" className="action-button save" onClick={handleSaveEdit} disabled={isSaving}>
+            {isSaving ? "Salvataggio..." : "Salva"}
+          </button>
+        </div>
       </Modal>
     </div>
   );

@@ -1,192 +1,179 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Modal from "react-modal";
-import "./GestioneStruttura.css";
+import "../Traceability.css";
 
 Modal.setAppElement("#root");
 
 const ManageStructure = () => {
   const [farms, setFarms] = useState([]);
-  const [elements, setElements] = useState([]);  
+  const [elements, setElements] = useState([]);
   const [showFormElem, setShowFormElem] = useState(false);
   const [newElement, setNewElement] = useState("");
   const [newName, setNewName] = useState("");
   const [newNotes, setNewNotes] = useState("");
   const [selectedFarm, setSelectedFarm] = useState(null);
-  
 
   useEffect(() => {
-    // Fetch data da fattorie
-    axios
-      .get("http://localhost:5000/api/farm")
-      .then((response) => {
-        console.log("Response data:", response.data);
-        if (Array.isArray(response.data)) {
-          setFarms(response.data);
-        } else {
-          console.error("Response is not an array:", response.data);
-        }
+    axios.get("http://localhost:5000/api/farm")
+      .then((res) => {
+        if (Array.isArray(res.data)) setFarms(res.data);
       })
-      .catch((error) => {
-        console.error("Error fetching fattorie:", error);
-      });
-    // Fetch data da elementi
-    axios
-      .get("http://localhost:5000/api/elements")
-      .then((response) => {
-        console.log("Response data (Elements):", response.data);
-        if (Array.isArray(response.data)) {
-          setElements(response.data);
-        } else {
-          console.error("Response is not an array:", response.data);
-        }
+      .catch((err) => console.error("Error fetching farms:", err));
+
+    axios.get("http://localhost:5000/api/elements")
+      .then((res) => {
+        if (Array.isArray(res.data)) setElements(res.data);
       })
-      .catch((error) => {
-        console.error("Error fetching elements:", error);
-      });
+      .catch((err) => console.error("Error fetching elements:", err));
   }, []);
 
-
   const handleAddElement = () => {
-    axios
-      .post("http://localhost:5000/api/elements", {
-        element: newElement,
-        name: newName,
-        notes: newNotes,
-        farmId: selectedFarm.id,
-      })
+    if (!selectedFarm) {
+      alert("Nessuna farm selezionata.");
+      return;
+    }
+    if (!newElement || !newName.trim()) {
+      alert("Seleziona un tipo e inserisci un nome.");
+      return;
+    }
+
+    axios.post("http://localhost:5000/api/elements", {
+      element: newElement,
+      name: newName,
+      notes: newNotes,
+      farmId: selectedFarm.id,
+    })
       .then((response) => {
         setElements([...elements, response.data]);
         setNewElement("");
         setNewName("");
         setNewNotes("");
         setShowFormElem(false);
-        alert("Elemento creato");
+        alert("Elemento creato con successo!");
       })
       .catch((error) => {
-        console.error("Error adding new element:", error);
-        alert("Errore nella creazione dell'elemento" + error.message);
+        console.error("Error adding element:", error);
+        alert("Errore nella creazione dell'elemento: " + error.message);
       });
   };
 
   const handleDeleteElement = (elementId) => {
-    axios
-      .delete(`http://localhost:5000/api/elements/${elementId}`)
-      .then(() => {
-        setElements(elements.filter((elem) => elem.id !== elementId));
-      })
-      .catch((error) => {
-        console.error("Error deleting element:", error);
-      });
+    if (!window.confirm("Sei sicuro di voler eliminare questo elemento?")) return;
+    axios.delete(`http://localhost:5000/api/elements/${elementId}`)
+      .then(() => setElements(elements.filter((e) => e.id !== elementId)))
+      .catch((err) => console.error("Error deleting element:", err));
   };
 
-  const handleCancel = () =>{
-    setShowFormElem(false)
-  }
-
-  
-
-
   return (
-    <div className="gestione-struttura">
+    <div className="form-container" style={{ maxWidth: "900px" }}>
+      <h2>Gestione Struttura</h2>
+
       {farms.map((farm) => (
-        <div key={farm.id} className="fattoria-section">
-          <div className="fattoria-header">
-            <h1 className="fattoria-title"> {farm.name}</h1>
-            <div className="action-buttons">
-              <button
-                className="modify-button"
-                onClick={() => {
-                  setShowFormElem(true);
-                  setSelectedFarm(farm);
-                }}
-              >
-                Adicionar Item
-              </button>
-            </div>
+        <div key={farm.id}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "16px 0 8px" }}>
+            <h3 style={{ margin: 0 }}>{farm.name}</h3>
+            <button
+              className="action-button"
+              style={{ width: "auto", marginTop: 0, padding: "6px 16px" }}
+              onClick={() => { setShowFormElem(true); setSelectedFarm(farm); }}
+            >
+              + Aggiungi Elemento
+            </button>
           </div>
-          <table className="element-table">
+
+          <table>
             <thead>
-              <tr>                
-                <th>Element</th>
-                <th>Name</th>
-                <th>Notes</th>
-                <th>Actions</th>
+              <tr>
+                <th>Tipo</th>
+                <th>Nome</th>
+                <th>Note</th>
+                <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
               {elements
-                .filter((element) => element.farmId === farm.id)
-                .map((element) => (
-                  <tr key={element.id}>                    
-                    <td>{element.element}</td>
-                    <td>{element.name}</td>
-                    <td>{element.notes}</td>
-                    <td><button
-                        className="delete-button"
-                        onClick={() => handleDeleteElement(element.id)}
+                .filter((el) => el.farmId === farm.id)
+                .map((el) => (
+                  <tr key={el.id}>
+                    <td>{el.element}</td>
+                    <td>{el.name}</td>
+                    <td>{el.notes || <span className="text-faint">—</span>}</td>
+                    <td>
+                      <button
+                        className="action-button"
+                        style={{ backgroundColor: "var(--color-danger)", width: "auto", marginTop: 0, padding: "3px 10px", fontSize: "0.78rem" }}
+                        onClick={() => handleDeleteElement(el.id)}
                       >
-                        X
-                      </button></td>
+                        Elimina
+                      </button>
+                    </td>
                   </tr>
                 ))}
+              {elements.filter((el) => el.farmId === farm.id).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="empty-state">Nessun elemento configurato</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       ))}
 
+      {farms.length === 0 && (
+        <p className="empty-state">Nessuna farm trovata. Configura prima una farm.</p>
+      )}
+
+      {/* Modal nuovo elemento */}
       <Modal
         isOpen={showFormElem}
         onRequestClose={() => setShowFormElem(false)}
-        contentLabel="Adicionar Item"
-        className="modal-struttura"
-        overlayClassName="overlay"
+        contentLabel="Aggiungi Elemento"
+        className="modal-content"
+        overlayClassName="modal"
       >
-        <h2>Adicionar Item</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAddElement();
-          }}
-          className="form"
-        >
-          <div className="form-group">
-            <label>Item:</label>
-            <select
-              value={newElement}
-              onChange={(e) => setNewElement(e.target.value)}
-            >
+        <div className="modal-header">
+          <h2>Aggiungi Elemento</h2>
+        </div>
+        <div className="modal-body">
+          <label>Tipo:
+            <select value={newElement} onChange={(e) => setNewElement(e.target.value)} required>
               <option value="">Seleziona</option>
-              <option value="Patio">Terreno</option>
-              <option value="Dryer">Seccatore</option>
+              <option value="Patio">Terreno (Patio)</option>
+              <option value="Dryer">Seccatore (Dryer)</option>
               <option value="Tulha">Tulha</option>
-              <option value="Centrifuga">Centrifuga</option>              
+              <option value="Centrifuga">Centrifuga</option>
             </select>
-          </div>
-          <div className="form-group">
-            <label>Name:</label>
+          </label>
+          <label>Nome:
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
+              placeholder="Es. Terreno01"
               maxLength="45"
+              required
             />
-          </div>
-          <div className="form-group">
-            <label>Specifiche:</label>
+          </label>
+          <label>Note:
             <textarea
               value={newNotes}
               onChange={(e) => setNewNotes(e.target.value)}
+              placeholder="Specifiche o note opzionali..."
               maxLength="255"
+              rows={3}
+              style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid var(--color-border)", resize: "vertical" }}
             />
-          </div>
-          <button type="submit" className="submit-button">
-            Inserisci
-          </button>
-          <button type="cancel" onClick={handleCancel} className="cancel-button">
+          </label>
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="action-button cancel" onClick={() => setShowFormElem(false)}>
             Annulla
           </button>
-        </form>
+          <button type="button" className="action-button save" onClick={handleAddElement}>
+            Inserisci
+          </button>
+        </div>
       </Modal>
     </div>
   );

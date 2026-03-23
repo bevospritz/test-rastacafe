@@ -378,6 +378,22 @@ app.post("/api/plots", async (req, res) => {
   }
 });
 
+// Endpoint per modificare plots 
+app.patch("/api/plots/:id", async (req, res) => {
+  const { id } = req.params;
+  const { state, irrigation, renda_forecast } = req.body;
+  try {
+    await connection.query(
+      "UPDATE plots SET state = ?, irrigation = ?, renda_forecast = ? WHERE id = ?",
+      [state || null, irrigation || null, renda_forecast || null, id]
+    );
+    res.status(200).json({ message: "Plot aggiornato con successo" });
+  } catch (err) {
+    console.error("Errore PATCH /api/plots/:id", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
 // Endpoint per l'upload degli appezzamenti tramite file Excel
 app.post("/api/excelplots", upload.single("file"), async (req, res) => {
   try {
@@ -651,6 +667,41 @@ app.get("/api/restcard", async (req, res) => {
     res.status(500).send("Errore recupero rest card");
   }
 });
+
+// GET /api/stockingcard
+app.get("/api/stockingcard", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        c.id,
+        c.date,
+        c.cleaning_nLot AS name,
+        c.bags,
+        c.deposit,
+        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots,
+        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type
+      FROM cleaning c
+      JOIN cleaning_prevnlot cp ON c.id = cp.cleaning_id
+      JOIN rest r ON cp.prev_nLot_rest = r.rest_nLot
+      JOIN rest_prevnlot rp ON r.id = rp.rest_id
+      LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
+      LEFT JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
+      LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+      LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nLot
+      LEFT JOIN patio_prevnlot pp ON COALESCE(p.id, p2.id) = pp.patio_id
+      LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      GROUP BY c.id, c.date, c.cleaning_nLot, c.bags, c.deposit
+      ORDER BY c.date DESC;
+    `;
+    const [results] = await connection.query(query);
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("Errore /api/stockingcard:", err);
+    res.status(500).send("Errore recupero stockingcard");
+  }
+});
+
+
 
 // Endpoint per ottenere i patii per la dashboard
 app.get("/api/patio", async (req, res) => {
@@ -1074,21 +1125,22 @@ app.get("/api/dryer", async (req, res) => {
         d.date,
         d.dryer AS name,
         d.volume,
+        d.partial_volume,
         d.status,
         d.dryer_nLot,
-        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
-        GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
+        GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', ') AS type,
+        GROUP_CONCAT(DISTINCT nl.plot ORDER BY nl.plot SEPARATOR ', ') AS plots
       FROM dryer d
       LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
-      LEFT JOIN patio p ON dp.prev_nLot_patio = p.patio_nlot
+      LEFT JOIN patio p ON dp.prev_nLot_patio = p.patio_nLot
       LEFT JOIN patio_prevnlot pp ON p.id = pp.patio_id
       LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
-      GROUP BY d.id;
+      GROUP BY d.id, d.date, d.dryer, d.volume, d.partial_volume, d.status, d.dryer_nLot;
     `;
     const [results] = await connection.query(query);
     res.status(200).json(results);
   } catch (err) {
-    console.error("Errore nella route /api/dryercard:", err);
+    console.error("Errore nella route /api/dryer:", err);
     res.status(500).send("Errore durante il recupero dei dati del dryer");
   }
 });
@@ -1333,7 +1385,7 @@ app.get("/api/restforcleaning", async (req, res) => {
         p.volume AS patio_volume,
         d.date AS dryer_date,
         d.volume AS dryer_volume,
-        p2.type AS dryer_type
+        GROUP_CONCAT(DISTINCT p2.type SEPARATOR ', ') AS dryer_type
       FROM rest r
       JOIN rest_prevnlot rp ON r.id = rp.rest_id
       LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
@@ -1341,13 +1393,16 @@ app.get("/api/restforcleaning", async (req, res) => {
       LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
       LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nlot
       WHERE r.status IN ('active', 'split')
+      GROUP BY r.id, r.tulha, r.dateIn, r.volume, r.rest_nLot,
+               p.date, p.type, p.volume,
+               d.date, d.volume
       ORDER BY r.tulha, r.dateIn ASC;
     `;
 
     const [rows] = await connection.query(query);
 
-    // Raggruppa per tulha (non per rest_id)
     const grouped = {};
+    const seenRestIds = {}; // traccia i rest_id già contati per il volume
 
     rows.forEach((row) => {
       if (!grouped[row.tulha]) {
@@ -1358,17 +1413,28 @@ app.get("/api/restforcleaning", async (req, res) => {
         };
       }
 
-      grouped[row.tulha].totalVolume += row.rest_volume;
+      // Somma il volume solo la prima volta che vedo questo rest_id
+      if (!seenRestIds[row.rest_id]) {
+        grouped[row.tulha].totalVolume += row.rest_volume;
+        seenRestIds[row.rest_id] = true;
+      }
 
-      grouped[row.tulha].lots.push({
-        rest_id: row.rest_id,
-        rest_nLot: row.rest_nLot,
-        dateIn: row.dateIn,
-        volume: row.rest_volume,
-        date: row.patio_date || row.dryer_date,
-        type: row.patio_type || row.dryer_type,
-        origin: row.patio_date ? "patio" : "dryer",
-      });
+      // Evita di pushare lotti duplicati (stesso rest_id già presente)
+      const alreadyAdded = grouped[row.tulha].lots.find(
+        (l) => l.rest_id === row.rest_id,
+      );
+
+      if (!alreadyAdded) {
+        grouped[row.tulha].lots.push({
+          rest_id: row.rest_id,
+          rest_nLot: row.rest_nLot,
+          dateIn: row.dateIn,
+          volume: row.rest_volume,
+          date: row.patio_date || row.dryer_date,
+          type: row.patio_type || row.dryer_type,
+          origin: row.patio_date ? "patio" : "dryer",
+        });
+      }
     });
 
     res.json(Object.values(grouped));
@@ -1422,7 +1488,7 @@ app.post("/api/cleaning", async (req, res) => {
     date,
     volume,
     weight,
-    bigBag,
+    bags,
     umidity,
     cata,
     deposit,
@@ -1435,13 +1501,13 @@ app.post("/api/cleaning", async (req, res) => {
 
     // 1. Inserisci in cleaning
     const [ins] = await connection.query(
-      `INSERT INTO cleaning (date, volume, weight, bigBag, cleaning_nLot, umidity, cata, deposit)
+      `INSERT INTO cleaning (date, volume, weight, bags, cleaning_nLot, umidity, cata, deposit)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         date,
         volume,
         weight,
-        bigBag,
+        bags,
         cleaning_nLot,
         umidity || null,
         cata || null,
@@ -1513,14 +1579,40 @@ app.post("/api/cleaning", async (req, res) => {
 // PATCH cleaning — aggiorna dati stocking
 app.patch("/api/cleaning/:id", async (req, res) => {
   const { id } = req.params;
-  const { umidity, cata, weight_deposit, deposit } = req.body;
-
+  const {
+    weight,
+    bags,
+    umidity,
+    cata,
+    peneira,
+    weight_deposit,
+    umidity_deposit,
+    cata_deposit,
+    peneira_deposit,
+    bebida,
+    deposit,
+  } = req.body;
   try {
     await connection.query(
       `UPDATE cleaning 
-       SET umidity = ?, cata = ?, weight_deposit = ?, deposit = ?
-       WHERE id = ?`,
-      [umidity || null, cata || null, weight_deposit || null, deposit || null, id]
+   SET weight = ?, bags = ?, umidity = ?, cata = ?, peneira = ?,
+       weight_deposit = ?, umidity_deposit = ?, cata_deposit = ?,
+       peneira_deposit = ?, bebida = ?, deposit = ?
+   WHERE id = ?`,
+      [
+        weight || null,
+        bags || null,
+        umidity || null,
+        cata || null,
+        peneira || null,
+        weight_deposit || null,
+        umidity_deposit || null,
+        cata_deposit || null,
+        peneira_deposit || null,
+        bebida || null,
+        deposit || null,
+        id,
+      ],
     );
     res.status(200).json({ message: "Lotto aggiornato con successo" });
   } catch (err) {
@@ -1533,11 +1625,134 @@ app.patch("/api/cleaning/:id", async (req, res) => {
 app.get("/api/cleaning", async (req, res) => {
   try {
     const [results] = await connection.query(
-      "SELECT * FROM cleaning ORDER BY date DESC"
+      "SELECT * FROM cleaning ORDER BY date DESC",
     );
     res.status(200).json(results);
   } catch (err) {
     console.error("Errore GET /api/cleaning", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+
+// ALBERO GENALOGICO LOTTI
+// GET /api/lot-history/:nLot — ricostruisce l'albero completo a partire da qualsiasi lotto
+app.get("/api/lot-history/:nLot", async (req, res) => {
+  const { nLot } = req.params;
+
+  try {
+    // Funzione ricorsiva che costruisce il nodo e i suoi figli
+    const buildTree = async (nLot) => {
+      const prefix = nLot.charAt(0).toUpperCase();
+      let node = { nLot, type: getType(prefix), data: null, children: [] };
+
+      // Carica i dati del nodo corrente
+      node.data = await fetchNodeData(prefix, nLot);
+
+      // Trova i figli in base al tipo
+      const children = await fetchChildren(prefix, nLot);
+      for (const childNLot of children) {
+        node.children.push(await buildTree(childNLot));
+      }
+
+      return node;
+    };
+
+    const getType = (prefix) => ({
+      H: "Raccolta", P: "Patio", D: "Dryer",
+      F: "Fermentazione", R: "Resting", C: "Cleaning"
+    }[prefix] || "Sconosciuto");
+
+    const fetchNodeData = async (prefix, nLot) => {
+      const queries = {
+        H: "SELECT newlot_nLot AS nLot, date, plot, volume, method, type FROM newlot WHERE newlot_nLot = ?",
+        P: "SELECT patio_nLot AS nLot, date, name, volume, type, status FROM patio WHERE patio_nLot = ?",
+        D: "SELECT dryer_nLot AS nLot, date, dryer AS name, volume, status FROM dryer WHERE dryer_nLot = ?",
+        F: "SELECT fermentation_nLot AS nLot, date, volume, method, type FROM fermentation WHERE fermentation_nLot = ?",
+        R: "SELECT rest_nLot AS nLot, dateIn AS date, tulha AS name, volume, status FROM rest WHERE rest_nLot = ?",
+        C: "SELECT cleaning_nLot AS nLot, date, volume, weight, bags, deposit FROM cleaning WHERE cleaning_nLot = ?",
+      };
+      if (!queries[prefix]) return null;
+      const [rows] = await connection.query(queries[prefix], [nLot]);
+      return rows[0] || null;
+    };
+
+    const fetchChildren = async (prefix, nLot) => {
+      let children = [];
+
+      if (prefix === "H") {
+        const [rows] = await connection.query(
+          `SELECT p.patio_nLot FROM patio p
+           JOIN patio_prevnlot pp ON p.id = pp.patio_id
+           WHERE pp.prev_nLot_newlot = ?`, [nLot]
+        );
+        children = rows.map(r => r.patio_nLot);
+      }
+
+      else if (prefix === "P") {
+        // Figli dryer
+        const [dRows] = await connection.query(
+          `SELECT d.dryer_nLot FROM dryer d
+           JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+           WHERE dp.prev_nLot_patio = ?`, [nLot]
+        );
+        // Figli fermentation
+        const [fRows] = await connection.query(
+          `SELECT f.fermentation_nLot FROM fermentation f
+           JOIN fermentation_prevnlot fp ON f.id = fp.fermentation_id
+           WHERE fp.prev_nLot_patio = ?`, [nLot]
+        );
+        // Figli rest (diretti da patio)
+        const [rRows] = await connection.query(
+          `SELECT r.rest_nLot FROM rest r
+           JOIN rest_prevnlot rp ON r.id = rp.rest_id
+           WHERE rp.prev_nLot_patio = ?`, [nLot]
+        );
+        children = [
+          ...dRows.map(r => r.dryer_nLot),
+          ...fRows.map(r => r.fermentation_nLot),
+          ...rRows.map(r => r.rest_nLot),
+        ];
+      }
+
+      else if (prefix === "D") {
+        const [rows] = await connection.query(
+          `SELECT r.rest_nLot FROM rest r
+           JOIN rest_prevnlot rp ON r.id = rp.rest_id
+           WHERE rp.prev_nLot_dryer = ?`, [nLot]
+        );
+        children = rows.map(r => r.rest_nLot);
+      }
+
+      else if (prefix === "F") {
+        // La fermentazione genera un nuovo patio
+        const [rows] = await connection.query(
+          `SELECT p.patio_nLot FROM patio p
+           JOIN patio_prevnlot pp ON p.id = pp.patio_id
+           WHERE pp.prev_nLot_fermentation = ?`, [nLot]
+        );
+        children = rows.map(r => r.patio_nLot);
+      }
+
+      else if (prefix === "R") {
+        const [rows] = await connection.query(
+          `SELECT c.cleaning_nLot FROM cleaning c
+           JOIN cleaning_prevnlot cp ON c.id = cp.cleaning_id
+           WHERE cp.prev_nLot_rest = ?`, [nLot]
+        );
+        children = rows.map(r => r.cleaning_nLot);
+      }
+
+      // C (cleaning) è foglia — nessun figlio per ora (selling verrà aggiunto)
+
+      return [...new Set(children)]; // deduplicazione
+    };
+
+    const tree = await buildTree(nLot);
+    res.json(tree);
+
+  } catch (err) {
+    console.error("Errore /api/lot-history:", err);
     res.status(500).json({ error: "Errore interno" });
   }
 });

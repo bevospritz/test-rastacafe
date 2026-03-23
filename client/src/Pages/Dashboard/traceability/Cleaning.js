@@ -12,7 +12,7 @@ const Cleaning = () => {
   const [form, setForm] = useState({
     date: "",
     weight: "",
-    bigBag: "",
+    bags: "",
     umidity: "",
     cata: "",
     deposit: "",
@@ -71,6 +71,32 @@ const Cleaning = () => {
     0,
   );
 
+  // Calcola lo stato FIFO di ogni sublotto dato il volume usato
+  // Restituisce array con aggiunta della prop 'fifoState': 'consumed' | 'partial' | 'untouched'
+  const getFifoStates = (lots, volumeUsed) => {
+    const sortedLots = [...lots].sort((a, b) => {
+      if (!a.dateIn) return 1;
+      if (!b.dateIn) return -1;
+      return new Date(a.dateIn) - new Date(b.dateIn);
+    });
+
+    let remaining = volumeUsed;
+
+    return sortedLots.map((lot) => {
+      if (remaining <= 0) {
+        return { ...lot, fifoState: "untouched" };
+      }
+      if (remaining >= lot.volume) {
+        remaining -= lot.volume;
+        return { ...lot, fifoState: "consumed" };
+      }
+      // parzialmente consumato
+      const partialLeft = lot.volume - remaining;
+      remaining = 0;
+      return { ...lot, fifoState: "partial", partialLeft };
+    });
+  };
+
   const generateNLot = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/cleaning/last-nlot");
@@ -106,7 +132,7 @@ const Cleaning = () => {
         date: form.date,
         volume: totalVolume,
         weight: parseInt(form.weight),
-        bigBag: parseInt(form.bigBag),
+        bags: parseInt(form.bags),
         umidity: form.umidity ? parseFloat(form.umidity) : null,
         cata: form.cata ? parseInt(form.cata) : null,
         deposit: form.deposit || null,
@@ -127,8 +153,7 @@ const Cleaning = () => {
 
   const handleCancel = () => navigate("/dashboard/traceability/manage-lot");
 
-  const isFormValid =
-    form.date && form.weight && form.bigBag && selectedTulhas.length > 0;
+  const isFormValid = form.date && form.weight && form.deposit && selectedTulhas.length > 0;
 
   return (
     <div className="form-container">
@@ -136,25 +161,21 @@ const Cleaning = () => {
       <form onSubmit={handleSubmit}>
 
         <h3>Seleziona Tulhe</h3>
-
         {tulhas.length === 0 ? (
           <p className="empty-state">Nessuna tulha disponibile per il cleaning</p>
         ) : (
           <div className="tulha-grid">
             {tulhas.map((tulha) => {
               const isSelected = !!selectedTulhas.find((t) => t.tulha === tulha.tulha);
-
-              const sortedLots = [...(tulha.lots || [])].sort((a, b) => {
-                if (!a.dateIn) return 1;
-                if (!b.dateIn) return -1;
-                return new Date(a.dateIn) - new Date(b.dateIn);
-              });
+              const usedVolume = isSelected ? getUsedVolume(tulha) : 0;
+              const lotsWithFifo = getFifoStates(tulha.lots || [], usedVolume);
 
               return (
                 <div
                   key={tulha.tulha}
                   className={`tulha-card ${isSelected ? "selected" : ""}`}
                 >
+                  {/* Header */}
                   <div className="tulha-card-header" onClick={() => toggleTulha(tulha)}>
                     <input type="checkbox" checked={isSelected} onChange={() => {}} />
                     <div>
@@ -169,21 +190,36 @@ const Cleaning = () => {
 
                   <hr className="card-divider" />
 
+                  {/* Sublotti con stato FIFO */}
                   <div className="sublot-list">
-                    {sortedLots.map((lot, i) => (
-                      <div key={i} className={`sublot-row ${i === 0 ? "fifo-first" : ""}`}>
-                        <span className="sublot-date">
-                          {lot.dateIn ? new Date(lot.dateIn).toLocaleDateString("it-IT") : "-"}
-                        </span>
-                        <span className="sublot-type">{lot.type || "-"}</span>
-                        <span className="sublot-volume">
-                          {lot.volume.toLocaleString("it-IT")} L
-                        </span>
-                        <span className="sublot-nlot">{lot.rest_nLot}</span>
-                      </div>
-                    ))}
+                    {lotsWithFifo.map((lot, i) => {
+                      // Classe CSS in base allo stato FIFO
+                      const fifoClass = isSelected
+                        ? lot.fifoState === "consumed"
+                          ? "consumed"
+                          : lot.fifoState === "partial"
+                          ? "partial"
+                          : ""
+                        : i === 0 ? "fifo-first" : "";
+
+                      return (
+                        <div key={i} className={`sublot-row ${fifoClass}`}>
+                          <span className="sublot-date">
+                            {lot.dateIn ? new Date(lot.dateIn).toLocaleDateString("it-IT") : "-"}
+                          </span>
+                          <span className="sublot-type">{lot.type || "-"}</span>
+                          <span className="sublot-volume">
+                            {lot.fifoState === "partial" && isSelected
+                              ? `${lot.partialLeft.toLocaleString("it-IT")} L rim.`
+                              : `${lot.volume.toLocaleString("it-IT")} L`}
+                          </span>
+                          <span className="sublot-nlot">{lot.rest_nLot}</span>
+                        </div>
+                      );
+                    })}
                   </div>
 
+                  {/* Slider */}
                   {isSelected && (
                     <div className="slider-container">
                       <div className="slider-label">
@@ -247,14 +283,13 @@ const Cleaning = () => {
         </label>
 
         <label>
-          N° Big Bags (60kg):
+          N° Sacchi (60kg):
           <input
             type="number"
             min="0"
-            value={form.bigBag}
-            onChange={(e) => setForm((prev) => ({ ...prev, bigBag: e.target.value }))}
-            placeholder="es. 60"
-            required
+            value={form.bags}
+            onChange={(e) => setForm((prev) => ({ ...prev, bags: e.target.value }))}
+            placeholder="es. 60"            
           />
         </label>
 
@@ -288,6 +323,7 @@ const Cleaning = () => {
           <select
             value={form.deposit}
             onChange={(e) => setForm((prev) => ({ ...prev, deposit: e.target.value }))}
+            required
           >
             <option value="">— Nessun deposito (vendita diretta) —</option>
             {deposits.map((d) => (
