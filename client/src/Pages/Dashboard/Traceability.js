@@ -6,6 +6,7 @@ import "./Traceability.css";
 const CARDS = [
   {
     key: "newLots",
+    className: "card-nuovi-lotti",
     title: "Nuovi Lotti",
     endpoint: "/api/newlot",
     empty: "Nessun nuovo lotto",
@@ -22,6 +23,7 @@ const CARDS = [
   },
   {
     key: "patios",
+    className: "card-patios",
     title: "Patios",
     endpoint: "/api/patiocard",
     empty: "Nessun patio attivo",
@@ -40,6 +42,7 @@ const CARDS = [
   },
   {
     key: "dryers",
+    className: "card-dryer",
     title: "Dryer",
     endpoint: "/api/dryercard",
     empty: "Nessun dryer attivo",
@@ -56,6 +59,7 @@ const CARDS = [
   },
   {
     key: "fermentations",
+    className: "card-fermentazioni",
     title: "Fermentazioni",
     endpoint: "/api/fermentationcard",
     empty: "Nessuna fermentazione attiva",
@@ -72,6 +76,7 @@ const CARDS = [
   },
   {
     key: "rests",
+    className: "card-rest",
     title: "Tulha / Rest",
     endpoint: "/api/restcard",
     empty: "Nessun lotto in riposo",
@@ -88,6 +93,7 @@ const CARDS = [
   },
   {
     key: "stocking",
+    className: "card-stocking",
     title: "Stocking",
     endpoint: "/api/stockingcard",
     empty: "Nessun lotto stoccato",
@@ -180,7 +186,7 @@ const Traceability = () => {
             {CARDS.map((card) => {
               const data = cardData[card.key];
               return (
-                <div key={card.key} className="card">
+                <div key={card.key} className={`card ${card.className}`}>
                   <h2>{card.title}</h2>
                   {data.length > 0 ? (
                     <table>

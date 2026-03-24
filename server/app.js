@@ -596,10 +596,10 @@ app.get("/api/dryercard", async (req, res) => {
         GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
       FROM dryer d
       JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
-      JOIN patio p ON dp.prev_nLot_patio = p.patio_nlot
+      JOIN patio p ON dp.prev_nLot_patio = p.patio_nLot
       JOIN patio_prevnlot pp ON p.id = pp.patio_id
       JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
-      WHERE d.status = 0
+      WHERE d.status != 'finished'
       GROUP BY d.id;
     `;
     const [results] = await connection.query(query);

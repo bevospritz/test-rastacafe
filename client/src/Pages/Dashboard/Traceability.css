@@ -179,6 +179,7 @@ input[type="range"] {
   pointer-events: none;
 }
 
+
 /* =========================================================
    TABELLE
    ========================================================= */
@@ -672,4 +673,38 @@ th {
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
   margin: 0.6rem 0 0.2rem 0;
+}
+
+/* =========================================================
+   TRACEABILITY CARDS — colori per tipo
+   ========================================================= */
+
+.card-nuovi-lotti {
+  border-top: 3px solid #66bb6a;
+  background-color: #f9fff9;
+}
+
+.card-patios {
+  border-top: 3px solid #42a5f5;
+  background-color: #f5faff;
+}
+
+.card-dryer {
+  border-top: 3px solid #ffa726;
+  background-color: #fffaf5;
+}
+
+.card-fermentazioni {
+  border-top: 3px solid #9c27b0;
+  background-color: #fdf5ff;
+}
+
+.card-rest {
+  border-top: 3px solid #26a69a;
+  background-color: #f5fffd;
+}
+
+.card-stocking {
+  border-top: 3px solid #8d6e63;
+  background-color: #fdf9f7;
 }
