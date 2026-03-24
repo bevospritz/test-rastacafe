@@ -378,14 +378,14 @@ app.post("/api/plots", async (req, res) => {
   }
 });
 
-// Endpoint per modificare plots 
+// Endpoint per modificare plots
 app.patch("/api/plots/:id", async (req, res) => {
   const { id } = req.params;
   const { state, irrigation, renda_forecast } = req.body;
   try {
     await connection.query(
       "UPDATE plots SET state = ?, irrigation = ?, renda_forecast = ? WHERE id = ?",
-      [state || null, irrigation || null, renda_forecast || null, id]
+      [state || null, irrigation || null, renda_forecast || null, id],
     );
     res.status(200).json({ message: "Plot aggiornato con successo" });
   } catch (err) {
@@ -700,8 +700,6 @@ app.get("/api/stockingcard", async (req, res) => {
     res.status(500).send("Errore recupero stockingcard");
   }
 });
-
-
 
 // Endpoint per ottenere i patii per la dashboard
 app.get("/api/patio", async (req, res) => {
@@ -1634,6 +1632,164 @@ app.get("/api/cleaning", async (req, res) => {
   }
 });
 
+//Selling
+// GET buyers
+app.get("/api/buyers", async (req, res) => {
+  try {
+    const [results] = await connection.query(
+      "SELECT * FROM buyers ORDER BY name",
+    );
+    res.status(200).json(results);
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// POST buyer
+app.post("/api/buyers", async (req, res) => {
+  const { name } = req.body;
+  try {
+    const [result] = await connection.query(
+      "INSERT INTO buyers (name) VALUES (?)",
+      [name],
+    );
+    res.status(201).json({ id: result.insertId, name });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+app.get("/api/selling", async (req, res) => {
+  try {
+    const [results] = await connection.query(
+      `SELECT * FROM cleaning 
+       WHERE status != 'sold'
+       ORDER BY date DESC`,
+    );
+    res.status(200).json(results);
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// GET selling/history — storico vendite
+app.get("/api/selling/history", async (req, res) => {
+  try {
+    const [results] = await connection.query(
+      `SELECT s.*, b.name AS buyer_name, c.cleaning_nLot
+       FROM selling s
+       JOIN buyers b ON s.buyer_id = b.id
+       JOIN cleaning c ON s.cleaning_id = c.id
+       ORDER BY s.date DESC`,
+    );
+    res.status(200).json(results);
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// POST selling — registra vendita
+app.post("/api/selling", async (req, res) => {
+  const {
+    lots,
+    buyer_id,
+    price_per_bag,
+    currency,
+    notes,
+    date,
+    certification,
+    certification_bonus,
+  } = req.body;
+  // lots = array di { cleaning_nLot, cleaning_id, bags_sold, weight_sold }
+
+  try {
+    await connection.beginTransaction();
+
+    // Genera selling_nLot
+    const [last] = await connection.query(
+      "SELECT selling_nLot FROM selling ORDER BY selling_nLot DESC LIMIT 1",
+    );
+    const lastNlot = last.length === 0 ? "S00000" : last[0].selling_nLot;
+    const nextNum = parseInt(lastNlot.substring(1)) + 1;
+    const newNlot = "S" + nextNum.toString().padStart(5, "0");
+
+    // Totali aggregati
+    const totalBags = lots.reduce((sum, l) => sum + l.bags_sold, 0);
+    const totalWeight = lots.reduce((sum, l) => sum + (l.weight_sold || 0), 0);
+
+    // Inserisci vendita
+    const [ins] = await connection.query(
+      `INSERT INTO selling (date, buyer_id, bags_sold, weight_sold, price_per_bag, currency, notes, selling_nLot, certification, certification_bonus)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        date,
+        buyer_id,
+        totalBags,
+        totalWeight || null,
+        price_per_bag || null,
+        currency || "USD",
+        notes || null,
+        newNlot,
+        certification || null,
+        certification_bonus || null,
+      ],
+    );
+    const sellingId = ins.insertId;
+
+    // Per ogni lotto venduto
+    for (const lot of lots) {
+      // Inserisci in selling_prevnlot
+      await connection.query(
+        `INSERT INTO selling_prevnlot (selling_id, prev_nLot_cleaning, bags)
+         VALUES (?, ?, ?)`,
+        [sellingId, lot.cleaning_nLot, lot.bags_sold],
+      );
+
+      // Aggiorna status cleaning
+      const [rows] = await connection.query(
+        "SELECT bags, weight, partial_bags, partial_weight, status FROM cleaning WHERE id = ?",
+        [lot.cleaning_id],
+      );
+      if (rows.length === 0) continue;
+
+      const c = rows[0];
+      const currentBags =
+        c.status === "partial" && c.partial_bags != null
+          ? c.partial_bags
+          : c.bags;
+      const currentWeight =
+        c.status === "partial" && c.partial_weight != null
+          ? c.partial_weight
+          : c.weight;
+      const remainingBags = currentBags - lot.bags_sold;
+      const remainingWeight =
+        currentWeight && lot.weight_sold
+          ? currentWeight - lot.weight_sold
+          : null;
+
+      if (remainingBags > 0) {
+        await connection.query(
+          "UPDATE cleaning SET status = 'partial', partial_bags = ?, partial_weight = ? WHERE id = ?",
+          [remainingBags, remainingWeight, lot.cleaning_id],
+        );
+      } else {
+        await connection.query(
+          "UPDATE cleaning SET status = 'sold', partial_bags = NULL, partial_weight = NULL WHERE id = ?",
+          [lot.cleaning_id],
+        );
+      }
+    }
+
+    await connection.commit();
+    res
+      .status(201)
+      .json({ message: "Vendita registrata", selling_nLot: newNlot });
+  } catch (err) {
+    await connection.rollback();
+    console.error("Errore POST /api/selling:", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
 
 // ALBERO GENALOGICO LOTTI
 // GET /api/lot-history/:nLot — ricostruisce l'albero completo a partire da qualsiasi lotto
@@ -1658,10 +1814,16 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
       return node;
     };
 
-    const getType = (prefix) => ({
-      H: "Raccolta", P: "Patio", D: "Dryer",
-      F: "Fermentazione", R: "Resting", C: "Cleaning"
-    }[prefix] || "Sconosciuto");
+    const getType = (prefix) =>
+      ({
+        H: "Raccolta",
+        P: "Patio",
+        D: "Dryer",
+        F: "Fermentazione",
+        R: "Resting",
+        C: "Cleaning",
+        S: "Selling",
+      })[prefix] || "Sconosciuto";
 
     const fetchNodeData = async (prefix, nLot) => {
       const queries = {
@@ -1671,6 +1833,8 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         F: "SELECT fermentation_nLot AS nLot, date, volume, method, type FROM fermentation WHERE fermentation_nLot = ?",
         R: "SELECT rest_nLot AS nLot, dateIn AS date, tulha AS name, volume, status FROM rest WHERE rest_nLot = ?",
         C: "SELECT cleaning_nLot AS nLot, date, volume, weight, bags, deposit FROM cleaning WHERE cleaning_nLot = ?",
+        S: `SELECT selling_nLot AS nLot, date, bags_sold AS bags, price_per_bag, currency 
+    FROM selling WHERE selling_nLot = ?`,
       };
       if (!queries[prefix]) return null;
       const [rows] = await connection.query(queries[prefix], [nLot]);
@@ -1684,63 +1848,70 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         const [rows] = await connection.query(
           `SELECT p.patio_nLot FROM patio p
            JOIN patio_prevnlot pp ON p.id = pp.patio_id
-           WHERE pp.prev_nLot_newlot = ?`, [nLot]
+           WHERE pp.prev_nLot_newlot = ?`,
+          [nLot],
         );
-        children = rows.map(r => r.patio_nLot);
-      }
-
-      else if (prefix === "P") {
+        children = rows.map((r) => r.patio_nLot);
+      } else if (prefix === "P") {
         // Figli dryer
         const [dRows] = await connection.query(
           `SELECT d.dryer_nLot FROM dryer d
            JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
-           WHERE dp.prev_nLot_patio = ?`, [nLot]
+           WHERE dp.prev_nLot_patio = ?`,
+          [nLot],
         );
         // Figli fermentation
         const [fRows] = await connection.query(
           `SELECT f.fermentation_nLot FROM fermentation f
            JOIN fermentation_prevnlot fp ON f.id = fp.fermentation_id
-           WHERE fp.prev_nLot_patio = ?`, [nLot]
+           WHERE fp.prev_nLot_patio = ?`,
+          [nLot],
         );
         // Figli rest (diretti da patio)
         const [rRows] = await connection.query(
           `SELECT r.rest_nLot FROM rest r
            JOIN rest_prevnlot rp ON r.id = rp.rest_id
-           WHERE rp.prev_nLot_patio = ?`, [nLot]
+           WHERE rp.prev_nLot_patio = ?`,
+          [nLot],
         );
         children = [
-          ...dRows.map(r => r.dryer_nLot),
-          ...fRows.map(r => r.fermentation_nLot),
-          ...rRows.map(r => r.rest_nLot),
+          ...dRows.map((r) => r.dryer_nLot),
+          ...fRows.map((r) => r.fermentation_nLot),
+          ...rRows.map((r) => r.rest_nLot),
         ];
-      }
-
-      else if (prefix === "D") {
+      } else if (prefix === "D") {
         const [rows] = await connection.query(
           `SELECT r.rest_nLot FROM rest r
            JOIN rest_prevnlot rp ON r.id = rp.rest_id
-           WHERE rp.prev_nLot_dryer = ?`, [nLot]
+           WHERE rp.prev_nLot_dryer = ?`,
+          [nLot],
         );
-        children = rows.map(r => r.rest_nLot);
-      }
-
-      else if (prefix === "F") {
+        children = rows.map((r) => r.rest_nLot);
+      } else if (prefix === "F") {
         // La fermentazione genera un nuovo patio
         const [rows] = await connection.query(
           `SELECT p.patio_nLot FROM patio p
            JOIN patio_prevnlot pp ON p.id = pp.patio_id
-           WHERE pp.prev_nLot_fermentation = ?`, [nLot]
+           WHERE pp.prev_nLot_fermentation = ?`,
+          [nLot],
         );
-        children = rows.map(r => r.patio_nLot);
-      }
-
-      else if (prefix === "R") {
+        children = rows.map((r) => r.patio_nLot);
+      } else if (prefix === "R") {
         const [rows] = await connection.query(
           `SELECT c.cleaning_nLot FROM cleaning c
            JOIN cleaning_prevnlot cp ON c.id = cp.cleaning_id
-           WHERE cp.prev_nLot_rest = ?`, [nLot]
+           WHERE cp.prev_nLot_rest = ?`,
+          [nLot],
         );
-        children = rows.map(r => r.cleaning_nLot);
+        children = rows.map((r) => r.cleaning_nLot);
+      } else if (prefix === "C") {
+        const [rows] = await connection.query(
+          `SELECT s.selling_nLot FROM selling s
+     JOIN selling_prevnlot sp ON s.id = sp.selling_id
+     WHERE sp.prev_nLot_cleaning = ?`,
+          [nLot],
+        );
+        children = rows.map((r) => r.selling_nLot);
       }
 
       // C (cleaning) è foglia — nessun figlio per ora (selling verrà aggiunto)
@@ -1750,7 +1921,6 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
 
     const tree = await buildTree(nLot);
     res.json(tree);
-
   } catch (err) {
     console.error("Errore /api/lot-history:", err);
     res.status(500).json({ error: "Errore interno" });
