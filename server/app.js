@@ -723,7 +723,8 @@ app.post("/api/patio", async (req, res) => {
 
   const getLastNlotQuery =
     "SELECT patio_nLot FROM patio ORDER BY patio_nLot DESC LIMIT 1";
-  const insertPatioQuery = `INSERT INTO patio (name, volume, type, date, status, fermented, patio_nLot) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  const insertPatioQuery = `INSERT INTO patio (name, volume, type, date, status, fermented, depulped, demucil, centrifug, patio_nLot) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const selectNewPatioQuery = "SELECT * FROM patio WHERE id = ?";
 
   try {
@@ -745,6 +746,9 @@ app.post("/api/patio", async (req, res) => {
         date,
         status = "active",
         fermented = 0,
+        depulped = 0, // ← aggiungi
+        demucil = 0, // ← aggiungi
+        centrifug = 0, // ← aggiungi
       } = entry;
 
       const newNlot = "P" + lastNumber.toString().padStart(5, "0");
@@ -757,6 +761,9 @@ app.post("/api/patio", async (req, res) => {
         date,
         status,
         fermented,
+        depulped, // ← non serve più || 0 perché ha già default
+        demucil,
+        centrifug,
         newNlot,
       ]);
 
@@ -1796,7 +1803,7 @@ app.get("/api/stock-adjustments/:cleaning_id", async (req, res) => {
   try {
     const [rows] = await connection.query(
       "SELECT * FROM stock_adjustments WHERE cleaning_id = ? ORDER BY date DESC",
-      [req.params.cleaning_id]
+      [req.params.cleaning_id],
     );
     res.json(rows);
   } catch (err) {
@@ -1813,28 +1820,30 @@ app.post("/api/stock-adjustments", async (req, res) => {
     // Inserisci aggiustamento
     await connection.query(
       "INSERT INTO stock_adjustments (date, cleaning_id, bags_lost, notes) VALUES (?, ?, ?, ?)",
-      [date, cleaning_id, bags_lost, notes || null]
+      [date, cleaning_id, bags_lost, notes || null],
     );
 
     // Aggiorna il residuo in cleaning
     const [rows] = await connection.query(
       "SELECT bags, partial_bags, status FROM cleaning WHERE id = ?",
-      [cleaning_id]
+      [cleaning_id],
     );
     const lot = rows[0];
-    const current = lot.status === "partial" && lot.partial_bags != null
-      ? lot.partial_bags : lot.bags;
+    const current =
+      lot.status === "partial" && lot.partial_bags != null
+        ? lot.partial_bags
+        : lot.bags;
     const remaining = current - bags_lost;
 
     if (remaining > 0) {
       await connection.query(
         "UPDATE cleaning SET partial_bags = ?, status = 'partial' WHERE id = ?",
-        [remaining, cleaning_id]
+        [remaining, cleaning_id],
       );
     } else {
       await connection.query(
         "UPDATE cleaning SET partial_bags = NULL, status = 'sold' WHERE id = ?",
-        [cleaning_id]
+        [cleaning_id],
       );
     }
 
@@ -1845,8 +1854,6 @@ app.post("/api/stock-adjustments", async (req, res) => {
     res.status(500).json({ error: "Errore interno" });
   }
 });
-
-
 
 // ALBERO GENALOGICO LOTTI
 // GET /api/lot-history/:nLot — ricostruisce l'albero completo a partire da qualsiasi lotto
