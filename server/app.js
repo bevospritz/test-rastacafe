@@ -1791,6 +1791,63 @@ app.post("/api/selling", async (req, res) => {
   }
 });
 
+// GET aggiustamenti per un lotto
+app.get("/api/stock-adjustments/:cleaning_id", async (req, res) => {
+  try {
+    const [rows] = await connection.query(
+      "SELECT * FROM stock_adjustments WHERE cleaning_id = ? ORDER BY date DESC",
+      [req.params.cleaning_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// POST aggiustamento — registra perdita
+app.post("/api/stock-adjustments", async (req, res) => {
+  const { cleaning_id, bags_lost, date, notes } = req.body;
+  try {
+    await connection.beginTransaction();
+
+    // Inserisci aggiustamento
+    await connection.query(
+      "INSERT INTO stock_adjustments (date, cleaning_id, bags_lost, notes) VALUES (?, ?, ?, ?)",
+      [date, cleaning_id, bags_lost, notes || null]
+    );
+
+    // Aggiorna il residuo in cleaning
+    const [rows] = await connection.query(
+      "SELECT bags, partial_bags, status FROM cleaning WHERE id = ?",
+      [cleaning_id]
+    );
+    const lot = rows[0];
+    const current = lot.status === "partial" && lot.partial_bags != null
+      ? lot.partial_bags : lot.bags;
+    const remaining = current - bags_lost;
+
+    if (remaining > 0) {
+      await connection.query(
+        "UPDATE cleaning SET partial_bags = ?, status = 'partial' WHERE id = ?",
+        [remaining, cleaning_id]
+      );
+    } else {
+      await connection.query(
+        "UPDATE cleaning SET partial_bags = NULL, status = 'sold' WHERE id = ?",
+        [cleaning_id]
+      );
+    }
+
+    await connection.commit();
+    res.status(201).json({ message: "Aggiustamento registrato" });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+
+
 // ALBERO GENALOGICO LOTTI
 // GET /api/lot-history/:nLot — ricostruisce l'albero completo a partire da qualsiasi lotto
 app.get("/api/lot-history/:nLot", async (req, res) => {
