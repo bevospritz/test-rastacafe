@@ -1,0 +1,260 @@
+/* =========================================================
+   DashboardAnalytics.css
+   Stile dashboard produzione caffè
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500&display=swap');
+
+.dash-root {
+  padding: 0;
+  min-height: 100vh;
+  background-color: #faf8f5;
+  font-family: 'Inter', sans-serif;
+  color: #2c1810;
+}
+
+/* ── Header ── */
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid #e8ddd4;
+  background: linear-gradient(135deg, #2c1810 0%, #5c3317 100%);
+  color: #fff;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dash-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: #f5e6d3;
+  letter-spacing: -0.02em;
+}
+
+.dash-subtitle {
+  font-size: 0.85rem;
+  color: #c4a882;
+  margin: 4px 0 0;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Selettore appezzamento ── */
+.plot-selector-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.plot-selector-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c4a882;
+  font-weight: 500;
+}
+
+.plot-selector {
+  background-color: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #f5e6d3;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-width: 220px;
+  outline: none;
+  transition: background 0.2s;
+}
+
+.plot-selector:hover {
+  background-color: rgba(255,255,255,0.2);
+}
+
+.plot-selector option {
+  background-color: #2c1810;
+  color: #f5e6d3;
+}
+
+/* ── Info bar appezzamento ── */
+.plot-info-bar {
+  display: flex;
+  gap: 24px;
+  padding: 12px 32px;
+  background-color: #f0e8de;
+  border-bottom: 1px solid #e0d0c0;
+  font-size: 0.83rem;
+  color: #5c3317;
+  flex-wrap: wrap;
+}
+
+.plot-info-bar strong {
+  color: #2c1810;
+}
+
+/* ── KPI Grid ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 24px 32px 8px;
+}
+
+.kpi-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 2px 8px rgba(44,24,16,0.07);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(44,24,16,0.12);
+}
+
+.kpi-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.kpi-unit {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 6px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  color: #2c1810;
+  font-weight: 500;
+}
+
+.kpi-sub {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+/* ── Charts Grid ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px 32px 32px;
+}
+
+.chart-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(44,24,16,0.07);
+}
+
+.chart-card.chart-wide {
+  grid-column: span 2;
+}
+
+.chart-header {
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #2c1810;
+  margin: 0 0 4px;
+}
+
+.chart-desc {
+  font-size: 0.78rem;
+  color: #999;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chart-empty {
+  color: #bbb;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 3rem 0;
+  font-style: italic;
+}
+
+/* ── Tooltip ── */
+.chart-tooltip {
+  background: #2c1810;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #f5e6d3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.tooltip-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #c4a882;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Loading ── */
+.dash-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem;
+  color: #8b6343;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e8ddd4;
+  border-top-color: #8b6343;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Empty state ── */
+.dash-empty {
+  text-align: center;
+  padding: 4rem;
+  color: #aaa;
+  font-style: italic;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .dash-header { padding: 20px 16px; }
+  .plot-info-bar { padding: 10px 16px; }
+  .kpi-grid { padding: 16px; }
+  .charts-grid {
+    grid-template-columns: 1fr;
+    padding: 8px 16px 24px;
+  }
+  .chart-card.chart-wide { grid-column: span 1; }
+}

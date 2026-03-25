@@ -2,7 +2,8 @@ import "./App.css";
 import React from "react";
 import Login from "./Pages/Login/login.js";
 import Register from "./Pages/Register/register.js";
-import Dashboard from "./Pages/Dashboard/dashboard";
+import Dashboard from "./Pages/Dashboard/dashboard.js";         
+import DashboardAnalytics from "./Pages/Dashboard/DashboardAnalytics.js"; 
 import Home from "./Pages/Home/Home.js";
 import ManageFarm from "./Pages/Dashboard/GestioneFattoria.js";
 import GestioneStruttura from "./Pages/Dashboard/components/GestioneStruttura.js";
@@ -30,11 +31,12 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard/*" element={<Dashboard />}>
+            <Route index element={<DashboardAnalytics />} />
             <Route path="structure" element={<ManageFarm />} />
             <Route path="gestione-struttura" element={<GestioneStruttura />} />
             <Route path="gestione-appezzamenti" element={<PlotsManagement />} />
             <Route path="users" element={<Users />} />
-            <Route path="traceability/*" element={<Traceability />}>              
+            <Route path="traceability/*" element={<Traceability />}>
               <Route path="manage-lot" element={<ManageLot />} />
               <Route path="manage-lot/new-lot" element={<NewLot />} />
               <Route path="manage-lot/wash-devide" element={<WashDevide />} />

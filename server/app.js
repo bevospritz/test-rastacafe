@@ -2041,6 +2041,71 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
   }
 });
 
+
+
+//DASHBOARD
+// Dashboard stats per appezzamento
+app.get("/api/dashboard/plot/:codename", async (req, res) => {
+  const { codename } = req.params;
+  try {
+    // 1. Info base appezzamento
+    const [plotInfo] = await connection.query(
+      "SELECT * FROM plots WHERE codename = ?", [codename]
+    );
+    if (plotInfo.length === 0) return res.status(404).json({ error: "Appezzamento non trovato" });
+    const plot = plotInfo[0];
+
+    // 2. Totale litri raccolti (newlot)
+    const [harvest] = await connection.query(
+      `SELECT COUNT(*) as nLots, COALESCE(SUM(volume), 0) as totalVolume
+       FROM newlot WHERE plot = ?`, [codename]
+    );
+
+    // 3. Distribuzione tipi sul patio (CD, Green, Dry, Natural, BigDry)
+    const [typesDist] = await connection.query(
+      `SELECT p.type, COALESCE(SUM(p.volume), 0) as volume
+       FROM patio p
+       JOIN patio_prevnlot pp ON p.id = pp.patio_id
+       JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+       WHERE nl.plot = ?
+       GROUP BY p.type`, [codename]
+    );
+
+    // 4. Renda — litri raccolti / peso pulito venduto
+    const [renda] = await connection.query(
+      `SELECT 
+         COALESCE(SUM(nl.volume), 0) as litersHarvested,
+         COALESCE(SUM(c.weight_deposit), 0) as weightSold
+       FROM newlot nl
+       LEFT JOIN patio_prevnlot pp ON pp.prev_nLot_newlot = nl.newlot_nLot
+       LEFT JOIN patio p ON p.id = pp.patio_id
+       LEFT JOIN rest_prevnlot rp ON rp.prev_nLot_patio = p.patio_nLot
+       LEFT JOIN rest r ON r.id = rp.rest_id
+       LEFT JOIN cleaning_prevnlot cp ON cp.prev_nLot_rest = r.rest_nLot
+       LEFT JOIN cleaning c ON c.id = cp.cleaning_id
+       WHERE nl.plot = ?`, [codename]
+    );
+
+    // 5. Andamento raccolta nel tempo (per grafico a linea)
+    const [harvestOverTime] = await connection.query(
+      `SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(volume) as volume
+       FROM newlot WHERE plot = ?
+       GROUP BY month ORDER BY month ASC`, [codename]
+    );
+
+    res.json({
+      plot,
+      harvest: harvest[0],
+      typesDist,
+      renda: renda[0],
+      harvestOverTime,
+    });
+  } catch (err) {
+    console.error("Errore /api/dashboard/plot:", err);
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
 app.use(express.static(path.join(__dirname, "..", "client", "build")));
 
 // Gestire tutte le altre richieste restituendo il file index.html di React
