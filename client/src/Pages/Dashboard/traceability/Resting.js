@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../Traceability.css";
 
+const toYMD = (d) => {
+  if (!d) return null;
+  return new Date(d).toISOString().split("T")[0];
+};
+const today = toYMD(new Date());
+
 const Resting = () => {
   const [selectedLots, setSelectedLots] = useState([]);
   const [dryerLots, setDryerLots] = useState([]);
@@ -16,6 +22,22 @@ const Resting = () => {
     timeIn: "",
   });
 
+  const minDate =
+    selectedLots.length > 0
+      ? selectedLots.reduce((max, lot) => {
+          const d = toYMD(lot.dateIn);
+          return d > max ? d : max;
+        }, "1900-01-01")
+      : null;
+
+  const validateDate = (dateIn) => {
+    if (!dateIn) return "Seleziona una data.";
+    if (dateIn > today) return `La data non può essere nel futuro.`;
+    if (minDate && dateIn < minDate)
+      return `La data non può essere precedente al patio più recente (${new Date(minDate).toLocaleDateString("it-IT")}).`;
+    return null;
+  };
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,7 +46,9 @@ const Resting = () => {
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : res.data.data;
         const filtered = data
-          .filter((lot) => (lot.status || "").toLowerCase().trim() !== "finished")
+          .filter(
+            (lot) => (lot.status || "").toLowerCase().trim() !== "finished",
+          )
           .map((lot) => ({ ...lot, source: "patio" }));
         setPatioLots(filtered);
       })
@@ -38,7 +62,9 @@ const Resting = () => {
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : res.data.data;
         const filtered = data
-          .filter((lot) => (lot.status || "").toLowerCase().trim() !== "finished")
+          .filter(
+            (lot) => (lot.status || "").toLowerCase().trim() !== "finished",
+          )
           .map((lot) => ({ ...lot, source: "dryer" }));
         setDryerLots(filtered);
       })
@@ -68,22 +94,28 @@ const Resting = () => {
 
     if (isCD && hasNonCD) {
       return window.confirm(
-        "Attenzione: stai cercando di aggiungere un lotto CD a lotti di tipo diverso (Dry/Green/Natural).\n\nSei sicuro di voler mescolare i tipi?"
+        "Attenzione: stai cercando di aggiungere un lotto CD a lotti di tipo diverso (Dry/Green/Natural).\n\nSei sicuro di voler mescolare i tipi?",
       );
     }
     if (!isCD && hasCD) {
       return window.confirm(
-        "Attenzione: stai cercando di aggiungere un lotto " + lot.type + " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?"
+        "Attenzione: stai cercando di aggiungere un lotto " +
+          lot.type +
+          " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?",
       );
     }
     return true;
   };
 
   const handleSelectPatioLot = (lot) => {
-    const exists = selectedLots.find((l) => l.id === lot.id && l.source === "patio");
+    const exists = selectedLots.find(
+      (l) => l.id === lot.id && l.source === "patio",
+    );
 
     if (exists) {
-      setSelectedLots((prev) => prev.filter((l) => !(l.id === lot.id && l.source === "patio")));
+      setSelectedLots((prev) =>
+        prev.filter((l) => !(l.id === lot.id && l.source === "patio")),
+      );
       setLotVolumes((prev) => {
         const updated = { ...prev };
         delete updated[`patio-${lot.id}`];
@@ -94,15 +126,22 @@ const Resting = () => {
 
     if (!checkCDMix(lot, selectedLots)) return;
 
-    setSelectedLots((prev) => [...prev, { ...lot, source: "patio", patio_nLot: lot.patio_nLot, dryer_nLot: null }]);
+    setSelectedLots((prev) => [
+      ...prev,
+      { ...lot, source: "patio", patio_nLot: lot.patio_nLot, dryer_nLot: null },
+    ]);
     setLotVolumes((prev) => ({ ...prev, [`patio-${lot.id}`]: 100 }));
   };
 
   const handleSelectDryerLot = (lot) => {
-    const exists = selectedLots.find((l) => l.id === lot.id && l.source === "dryer");
+    const exists = selectedLots.find(
+      (l) => l.id === lot.id && l.source === "dryer",
+    );
 
     if (exists) {
-      setSelectedLots((prev) => prev.filter((l) => !(l.id === lot.id && l.source === "dryer")));
+      setSelectedLots((prev) =>
+        prev.filter((l) => !(l.id === lot.id && l.source === "dryer")),
+      );
       setLotVolumes((prev) => {
         const updated = { ...prev };
         delete updated[`dryer-${lot.id}`];
@@ -113,7 +152,10 @@ const Resting = () => {
 
     if (!checkCDMix(lot, selectedLots)) return;
 
-    setSelectedLots((prev) => [...prev, { ...lot, source: "dryer", dryer_nLot: lot.dryer_nLot, patio_nLot: null }]);
+    setSelectedLots((prev) => [
+      ...prev,
+      { ...lot, source: "dryer", dryer_nLot: lot.dryer_nLot, patio_nLot: null },
+    ]);
     setLotVolumes((prev) => ({ ...prev, [`dryer-${lot.id}`]: 100 }));
   };
 
@@ -133,6 +175,12 @@ const Resting = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    const error = validateDate(form.dateIn);
+    if (error) {
+      alert(error);
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -147,7 +195,8 @@ const Resting = () => {
         dateIn: form.dateIn,
         timeIn: form.timeIn,
         lots: selectedLots.map((lot) => ({
-          prev_nLot_dryer: lot.source === "dryer" ? lot.dryer_nLot || null : null,
+          prev_nLot_dryer:
+            lot.source === "dryer" ? lot.dryer_nLot || null : null,
           prev_nLot_patio: lot.source === "patio" ? lot.patio_nLot : null,
         })),
       };
@@ -157,7 +206,9 @@ const Resting = () => {
           .filter((lot) => lot.source === "dryer")
           .map((lot) => ({
             id: lot.id,
-            volumeUsed: Math.round((lotVolumes[`dryer-${lot.id}`] / 100) * getDisplayVolume(lot)),
+            volumeUsed: Math.round(
+              (lotVolumes[`dryer-${lot.id}`] / 100) * getDisplayVolume(lot),
+            ),
           })),
       };
 
@@ -166,18 +217,33 @@ const Resting = () => {
           .filter((lot) => lot.source === "patio")
           .map((lot) => ({
             id: lot.id,
-            volumeUsed: Math.round((lotVolumes[`patio-${lot.id}`] / 100) * getDisplayVolume(lot)),
+            volumeUsed: Math.round(
+              (lotVolumes[`patio-${lot.id}`] / 100) * getDisplayVolume(lot),
+            ),
           })),
       };
 
-      const restRes = await axios.post("http://localhost:5000/api/rest", restPayload);
+      const restRes = await axios.post(
+        "http://localhost:5000/api/rest",
+        restPayload,
+      );
       console.log("Payload inviato a /api/rest:", restRes.data);
 
       const patches = [];
       if (dryerPatchPayload.lots.length > 0)
-        patches.push(axios.patch("http://localhost:5000/api/rest/update-lots", dryerPatchPayload));
+        patches.push(
+          axios.patch(
+            "http://localhost:5000/api/rest/update-lots",
+            dryerPatchPayload,
+          ),
+        );
       if (patioPatchPayload.lots.length > 0)
-        patches.push(axios.patch("http://localhost:5000/api/patio/update-lots", patioPatchPayload));
+        patches.push(
+          axios.patch(
+            "http://localhost:5000/api/patio/update-lots",
+            patioPatchPayload,
+          ),
+        );
 
       await Promise.all(patches);
 
@@ -197,7 +263,6 @@ const Resting = () => {
     <div className="form-container">
       <h2>Resting</h2>
       <form onSubmit={handleSubmit}>
-
         <h3>Patio</h3>
         <table>
           <thead>
@@ -215,11 +280,15 @@ const Resting = () => {
                 <td>
                   <input
                     type="checkbox"
-                    checked={!!selectedLots.find((l) => l.id === lot.id && l.source === "patio")}
+                    checked={
+                      !!selectedLots.find(
+                        (l) => l.id === lot.id && l.source === "patio",
+                      )
+                    }
                     onChange={() => handleSelectPatioLot(lot)}
                   />
                 </td>
-                <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
+                <td>{new Date(lot.dateIn).toLocaleDateString("it-IT")}</td>
                 <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
@@ -227,7 +296,9 @@ const Resting = () => {
             ))}
             {patioLots.length === 0 && (
               <tr>
-                <td colSpan={5} className="empty-state">Nessun lotto disponibile</td>
+                <td colSpan={5} className="empty-state">
+                  Nessun lotto disponibile
+                </td>
               </tr>
             )}
           </tbody>
@@ -250,11 +321,15 @@ const Resting = () => {
                 <td>
                   <input
                     type="checkbox"
-                    checked={!!selectedLots.find((l) => l.id === lot.id && l.source === "dryer")}
+                    checked={
+                      !!selectedLots.find(
+                        (l) => l.id === lot.id && l.source === "dryer",
+                      )
+                    }
                     onChange={() => handleSelectDryerLot(lot)}
                   />
                 </td>
-                <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
+                <td>{new Date(lot.dateIn).toLocaleDateString("it-IT")}</td>
                 <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
@@ -262,7 +337,9 @@ const Resting = () => {
             ))}
             {dryerLots.length === 0 && (
               <tr>
-                <td colSpan={5} className="empty-state">Nessun lotto disponibile</td>
+                <td colSpan={5} className="empty-state">
+                  Nessun lotto disponibile
+                </td>
               </tr>
             )}
           </tbody>
@@ -280,7 +357,10 @@ const Resting = () => {
               return (
                 <div key={key} className="lot-range-group">
                   <label>
-                    <strong>{lot.type} – {new Date(lot.date).toLocaleDateString("it-IT")}</strong>
+                    <strong>
+                      {lot.type} –{" "}
+                      {new Date(lot.dateIn).toLocaleDateString("it-IT")}
+                    </strong>
                     <br />
                     Perc: {perc}% ({usedVol.toLocaleString("it-IT")} L)
                     <input
@@ -288,7 +368,9 @@ const Resting = () => {
                       min="0"
                       max="100"
                       value={perc}
-                      onChange={(e) => handleSliderChange(lot, parseInt(e.target.value))}
+                      onChange={(e) =>
+                        handleSliderChange(lot, parseInt(e.target.value))
+                      }
                     />
                   </label>
                 </div>
@@ -297,7 +379,9 @@ const Resting = () => {
 
             <div className="total-volume-box">
               Volume totale selezionato:{" "}
-              <strong>{calculateTotalPartialVolume().toLocaleString("it-IT")} L</strong>
+              <strong>
+                {calculateTotalPartialVolume().toLocaleString("it-IT")} L
+              </strong>
             </div>
           </div>
         )}
@@ -307,12 +391,16 @@ const Resting = () => {
           <select
             name="tulha"
             value={form.tulha}
-            onChange={(e) => setForm((prev) => ({ ...prev, tulha: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, tulha: e.target.value }))
+            }
             required
           >
             <option value="">Seleziona</option>
             {tulhas.map((d, i) => (
-              <option key={i} value={d.name}>{d.name}</option>
+              <option key={i} value={d.name}>
+                {d.name}
+              </option>
             ))}
           </select>
         </label>
@@ -323,9 +411,24 @@ const Resting = () => {
             type="date"
             name="dateIn"
             value={form.dateIn}
-            onChange={(e) => setForm((prev) => ({ ...prev, dateIn: e.target.value }))}
+            min={minDate || undefined}
+            max={today}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, dateIn: e.target.value }))
+            }
             required
           />
+          {form.dateIn && validateDate(form.dateIn) && (
+            <span
+              style={{
+                color: "var(--color-danger)",
+                fontSize: "0.82rem",
+                display: "block",
+              }}
+            >
+              ⚠️ {validateDate(form.dateIn)}
+            </span>
+          )}
         </label>
 
         <label>
@@ -334,7 +437,9 @@ const Resting = () => {
             type="time"
             name="timeIn"
             value={form.timeIn}
-            onChange={(e) => setForm((prev) => ({ ...prev, timeIn: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, timeIn: e.target.value }))
+            }
             required
           />
         </label>
@@ -343,11 +448,21 @@ const Resting = () => {
           <button
             type="submit"
             className="action-button"
-            disabled={!form.tulha || !form.dateIn || !form.timeIn || selectedLots.length === 0}
+            disabled={
+              !form.tulha ||
+              !form.dateIn ||
+              !form.timeIn ||
+              selectedLots.length === 0 ||
+              !!validateDate(form.dateIn)
+            }
           >
             {isSubmitting ? "Salvataggio..." : "Conferma"}
           </button>
-          <button type="button" className="action-button cancel" onClick={handleCancel}>
+          <button
+            type="button"
+            className="action-button cancel"
+            onClick={handleCancel}
+          >
             Annulla
           </button>
         </div>

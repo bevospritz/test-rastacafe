@@ -17,8 +17,14 @@ const PORT = process.env.PORT || 5000;
 dotenv.config();
 
 // Middleware per il parsing del body delle richieste
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}));
+
+app.options("*", cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
-app.use(cors());
+
 
 // Configurazione della sessione
 app.use(sessionMiddleware);
@@ -36,6 +42,16 @@ app.use((req, res, next) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const upload = multer({ dest: "uploads/" });
+
+
+// Endpoint per ottenere l'utente autenticato
+app.get("/api/me", (req, res) => {
+  if (req.session?.user) {
+    res.json(req.session.user);
+  } else {
+    res.status(401).json({ message: "Non autenticato" });
+  }
+});
 
 // Endpoint di esempio per il register
 app.post("/register", async (req, res) => {
@@ -80,8 +96,6 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  console.log("Request Body:", req.body); // Logga il body della richiesta
-
   try {
     const [rows] = await connection.execute(
       "SELECT * FROM users WHERE email = ?",
@@ -92,14 +106,20 @@ app.post("/login", async (req, res) => {
     }
 
     const user = rows[0];
-
     const match = await bcrypt.compare(password, user.password);
+
     if (match) {
       req.session.user = user;
-      console.log("Session after login:", req.session);
-      res.status(200).json({ message: "Login successful", user });
+      req.session.save((err) => {
+        if (err) {
+          console.error("Errore salvataggio sessione:", err);
+          return res.status(500).json({ message: "Server error" });
+        }
+        console.log("Session saved:", req.session);
+        res.status(200).json({ message: "Login successful", user });
+      });
     } else {
-      res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
   } catch (err) {
     console.error("Login Error:", err);

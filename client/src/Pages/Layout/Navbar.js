@@ -4,8 +4,11 @@ import axios from 'axios';
 import logo from "../../assets/images/Rasta-Lion-Logo.png";
 import userIcon from "../../assets/images/user-icon.png"; 
 import "./Navbar.css";
+import { useAuth } from "../../AuthContext";
+
 
 function Navbar() {
+  const { setUser } = useAuth();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -15,10 +18,9 @@ function Navbar() {
 
   const handleLogout = async () => {
     try {      
-      const response = await axios.post('http://localhost:5000/logout');
-      console.log('Logout response:', response.data);    
-      navigate('/login');
-      console.log('Redirecting to /login');
+      await axios.post('http://localhost:5000/logout', {}, { withCredentials: true });
+      setUser(null);         
+      navigate('/login');      
     } catch (error) {
       console.error('Logout error:', error);
     }

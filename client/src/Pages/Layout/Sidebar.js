@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import "./Sidebar.css";
 import "../Dashboard/Dashboard.css";
+import ProtectedLink from "../../components/ProtectedLink";
 
 function Sidebar() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -10,9 +11,9 @@ function Sidebar() {
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
-    document.querySelector('.dashboard-content').className = isSidebarOpen 
-      ? 'dashboard-content dashboard-expanded' 
-      : 'dashboard-content dashboard-collapsed';
+    document.querySelector(".dashboard-content").className = isSidebarOpen
+      ? "dashboard-content dashboard-expanded"
+      : "dashboard-content dashboard-collapsed";
     console.log(isSidebarOpen);
   };
 
@@ -51,33 +52,25 @@ function Sidebar() {
             <li>
               {farms.map((farm) => (
                 <div key={farm.id}>
-                  <h3>{farm.name}</h3>
+                  <h3>{farm.name.toUpperCase()}</h3>
                 </div>
               ))}
             </li>
             <li>
               <Link to="/dashboard">Dashboard</Link>
             </li>
-            <li>
-              <Link to="/dashboard/users">Utenti</Link>
-            </li>
-            <li>
-              <Link to="/dashboard/structure">Manage Farm</Link>
-            </li>
-            {/* <li>
-              <Link to="/dashboard/plots">Appezzamenti</Link>
-            </li> */}
-            <li>
-              <Link to="/dashboard/products">Prodotti</Link>
-            </li>
-            <li>
-              <Link to="/dashboard/documents">Documenti</Link>
-            </li>
+            <ProtectedLink permission="users">
+              <li>
+                <Link to="/dashboard/users">Utenti</Link>
+              </li>
+            </ProtectedLink>
+            <ProtectedLink permission="structure">
+              <li>
+                <Link to="/dashboard/structure">Manage Farm</Link>
+              </li>
+            </ProtectedLink>
             <li>
               <Link to="/dashboard/traceability">Tracciabilità</Link>
-            </li>
-            <li>
-              <Link to="/dashboard/sharing">Condivisione</Link>
             </li>
           </ul>
         </nav>

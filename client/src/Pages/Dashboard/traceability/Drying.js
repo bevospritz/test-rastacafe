@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../Traceability.css";
 
+const toYMD = (d) => {
+  if (!d) return null;
+  return new Date(d).toISOString().split("T")[0];
+};
+const today = toYMD(new Date());
+
 const Drying = () => {
   const [patioLots, setPatioLots] = useState([]);
   const [selectedLots, setSelectedLots] = useState([]);
@@ -13,6 +19,22 @@ const Drying = () => {
     date: "",
     timeIn: "",
   });
+
+  const minDate =
+    selectedLots.length > 0
+      ? selectedLots.reduce((max, lot) => {
+          const d = toYMD(lot.date);
+          return d > max ? d : max;
+        }, "1900-01-01")
+      : null;
+
+  const validateDate = (date) => {
+    if (!date) return "Seleziona una data.";
+    if (date > today) return `La data non può essere nel futuro.`;
+    if (minDate && date < minDate)
+      return `La data non può essere precedente al patio più recente (${new Date(minDate).toLocaleDateString("it-IT")}).`;
+    return null;
+  };
 
   const navigate = useNavigate();
 
@@ -52,12 +74,14 @@ const Drying = () => {
 
     if (isCD && hasNonCD) {
       return window.confirm(
-        "Attenzione: stai cercando di aggiungere un lotto CD a lotti di tipo diverso (Dry/Green/Natural).\n\nSei sicuro di voler mescolare i tipi?"
+        "Attenzione: stai cercando di aggiungere un lotto CD a lotti di tipo diverso (Dry/Green/Natural).\n\nSei sicuro di voler mescolare i tipi?",
       );
     }
     if (!isCD && hasCD) {
       return window.confirm(
-        "Attenzione: stai cercando di aggiungere un lotto " + lot.type + " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?"
+        "Attenzione: stai cercando di aggiungere un lotto " +
+          lot.type +
+          " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?",
       );
     }
     return true;
@@ -97,6 +121,12 @@ const Drying = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const error = validateDate(form.date);
+    if (error) {
+      alert(error);
+      return;
+    }
+
     const dryerPayload = {
       dryer: form.dryer,
       volume: calculateTotalPartialVolume(),
@@ -121,17 +151,25 @@ const Drying = () => {
     }
 
     try {
-      const postRes = await axios.post("http://localhost:5000/api/dryer", dryerPayload);
+      const postRes = await axios.post(
+        "http://localhost:5000/api/dryer",
+        dryerPayload,
+      );
       console.log("POST /api/dryer ok:", postRes.data);
 
       const patchPayload = {
         lots: selectedLots.map((lot) => ({
           id: lot.id,
-          volumeUsed: Math.round((lotVolumes[lot.id] / 100) * getDisplayVolume(lot)),
+          volumeUsed: Math.round(
+            (lotVolumes[lot.id] / 100) * getDisplayVolume(lot),
+          ),
         })),
       };
 
-      await axios.patch("http://localhost:5000/api/patio/update-lots", patchPayload);
+      await axios.patch(
+        "http://localhost:5000/api/patio/update-lots",
+        patchPayload,
+      );
 
       alert("Dryer salvato e lotti aggiornati con successo!");
       navigate("/dashboard/traceability/manage-lot");
@@ -147,7 +185,6 @@ const Drying = () => {
     <div className="form-container">
       <h2>Drying</h2>
       <form onSubmit={handleSubmit}>
-
         <h3>Seleziona lotti dal Patio</h3>
         <table>
           <thead>
@@ -177,7 +214,9 @@ const Drying = () => {
             ))}
             {patioLots.length === 0 && (
               <tr>
-                <td colSpan={5} className="empty-state">Nessun lotto disponibile</td>
+                <td colSpan={5} className="empty-state">
+                  Nessun lotto disponibile
+                </td>
               </tr>
             )}
           </tbody>
@@ -194,7 +233,10 @@ const Drying = () => {
               return (
                 <div key={lot.id} className="lot-range-group">
                   <label>
-                    <strong>{lot.type} – {new Date(lot.date).toLocaleDateString("it-IT")}</strong>
+                    <strong>
+                      {lot.type} –{" "}
+                      {new Date(lot.date).toLocaleDateString("it-IT")}
+                    </strong>
                     <br />
                     Perc: {perc}% ({usedVol.toLocaleString("it-IT")} L)
                     <input
@@ -202,7 +244,9 @@ const Drying = () => {
                       min="0"
                       max="100"
                       value={perc}
-                      onChange={(e) => handleSliderChange(lot, parseInt(e.target.value))}
+                      onChange={(e) =>
+                        handleSliderChange(lot, parseInt(e.target.value))
+                      }
                     />
                   </label>
                 </div>
@@ -211,7 +255,9 @@ const Drying = () => {
 
             <div className="total-volume-box">
               Volume totale selezionato:{" "}
-              <strong>{calculateTotalPartialVolume().toLocaleString("it-IT")} L</strong>
+              <strong>
+                {calculateTotalPartialVolume().toLocaleString("it-IT")} L
+              </strong>
             </div>
           </div>
         )}
@@ -221,12 +267,16 @@ const Drying = () => {
           <select
             name="dryer"
             value={form.dryer}
-            onChange={(e) => setForm((prev) => ({ ...prev, dryer: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, dryer: e.target.value }))
+            }
             required
           >
             <option value="">Seleziona</option>
             {dryers.map((d, i) => (
-              <option key={i} value={d.name}>{d.name}</option>
+              <option key={i} value={d.name}>
+                {d.name}
+              </option>
             ))}
           </select>
         </label>
@@ -237,9 +287,24 @@ const Drying = () => {
             type="date"
             name="date"
             value={form.date}
-            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+            min={minDate || undefined}
+            max={today}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, date: e.target.value }))
+            }
             required
           />
+          {form.date && validateDate(form.date) && (
+            <span
+              style={{
+                color: "var(--color-danger)",
+                fontSize: "0.82rem",
+                display: "block",
+              }}
+            >
+              ⚠️ {validateDate(form.date)}
+            </span>
+          )}
         </label>
 
         <label>
@@ -248,7 +313,9 @@ const Drying = () => {
             type="time"
             name="timeIn"
             value={form.timeIn}
-            onChange={(e) => setForm((prev) => ({ ...prev, timeIn: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, timeIn: e.target.value }))
+            }
             required
           />
         </label>
@@ -257,11 +324,21 @@ const Drying = () => {
           <button
             type="submit"
             className="action-button"
-            disabled={!form.dryer || !form.date || !form.timeIn || selectedLots.length === 0}
+            disabled={
+              !form.dryer ||
+              !form.date ||
+              !form.timeIn ||
+              selectedLots.length === 0
+            }
           >
             Conferma
           </button>
-          <button type="button" className="action-button cancel" onClick={handleCancel}>
+          <button
+            type="button"
+            className="action-button cancel"
+            onClick={handleCancel}
+            disabled={!form.dryer || !form.date || !form.timeIn || selectedLots.length === 0 || !!validateDate(form.date)}
+          >
             Annulla
           </button>
         </div>

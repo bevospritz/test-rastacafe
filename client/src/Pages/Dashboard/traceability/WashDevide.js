@@ -20,6 +20,15 @@ const StepIndicator = ({ current, total }) => (
   </div>
 );
 
+// Formatta data in YYYY-MM-DD per confronti e attributo min
+const toYMD = (d) => {
+  if (!d) return null;
+  const date = new Date(d);
+  return date.toISOString().split("T")[0];
+};
+
+const today = toYMD(new Date());
+
 const WashDevide = () => {
   const [newLots, setNewLots] = useState([]);
   const [selectedLots, setSelectedLots] = useState([]);
@@ -37,8 +46,8 @@ const WashDevide = () => {
   // Opzioni lavorazione
   const [isFiltered, setIsFiltered] = useState(false);
   const [isDepulped, setIsDepulped] = useState(false);
-  const [isDesmucilado, setIsDesmucilado] = useState(false); // lavorazione aggiuntiva CD
-  const [isCentrifuged, setIsCentrifuged] = useState(false); // lavorazione aggiuntiva CD
+  const [isDesmucilado, setIsDesmucilado] = useState(false);
+  const [isCentrifuged, setIsCentrifuged] = useState(false);
 
   // Selezione patio per ogni lotto
   const [patioSelections, setPatioSelections] = useState({});
@@ -68,6 +77,24 @@ const WashDevide = () => {
     });
   };
 
+  // Data più recente tra i lotti selezionati → minDate per il passo successivo
+  const minDate = selectedLots.length > 0
+    ? selectedLots.reduce((max, lot) => {
+        const d = toYMD(lot.date);
+        return d > max ? d : max;
+      }, "1900-01-01")
+    : null;
+
+  // Validazione data inserita
+  const validateDate = (date) => {
+    if (!date) return "Seleziona una data.";
+    if (date > today) return `La data non può essere nel futuro (oggi: ${new Date().toLocaleDateString("it-IT")}).`;
+    if (minDate && date < minDate) {
+      return `La data non può essere precedente alla data di raccolta più recente (${new Date(minDate).toLocaleDateString("it-IT")}).`;
+    }
+    return null; // valida
+  };
+
   const totalVolume = Math.round(selectedLots.reduce((acc, lot) => acc + lot.volume, 0));
   const matureGreenVolume = Math.round((totalVolume * matureGreen) / 100);
   const dryVolume = Math.round(totalVolume - matureGreenVolume);
@@ -76,20 +103,15 @@ const WashDevide = () => {
   const cdVolume = Math.round((matureGreenVolume * cdDepulped) / 100);
   const greenVolume = matureGreenVolume - cdVolume;
 
-  // Costruisce i lotti da creare con tutti gli attributi
   const buildLots = () => {
     const patio_nLot = selectedLots[0]?.patio_nLot || null;
 
     if (!isWashed) {
-      return [{
-        key: "natural", type: "Natural", volume: totalVolume, patio_nLot,
-        depulped: 0, demucil: 0, centrifug: 0,
-      }];
+      return [{ key: "natural", type: "Natural", volume: totalVolume, patio_nLot, depulped: 0, demucil: 0, centrifug: 0 }];
     }
 
     const lots = [];
 
-    // Parte Dry
     if (isFiltered) {
       lots.push({ key: "bigDry", type: "BigDry", volume: bigDryVolume, patio_nLot, depulped: 0, demucil: 0, centrifug: 0 });
       lots.push({ key: "dry", type: "Dry", volume: dryAfterFilter, patio_nLot, depulped: 0, demucil: 0, centrifug: 0 });
@@ -97,26 +119,11 @@ const WashDevide = () => {
       lots.push({ key: "dry", type: "Dry", volume: dryVolume, patio_nLot, depulped: 0, demucil: 0, centrifug: 0 });
     }
 
-    // Parte Mature+Green
     if (isDepulped) {
-      // CD con eventuali lavorazioni aggiuntive
-      lots.push({
-        key: "cd", type: "CD", volume: cdVolume, patio_nLot,
-        depulped: 1,
-        demucil: isDesmucilado ? 1 : 0,
-        centrifug: isCentrifuged ? 1 : 0,
-      });
-      // Verde — tipo Green (nessuna lavorazione aggiuntiva)
-      lots.push({
-        key: "green", type: "Green", volume: greenVolume, patio_nLot,
-        depulped: 0, demucil: 0, centrifug: 0,
-      });
+      lots.push({ key: "cd", type: "CD", volume: cdVolume, patio_nLot, depulped: 1, demucil: isDesmucilado ? 1 : 0, centrifug: isCentrifuged ? 1 : 0 });
+      lots.push({ key: "green", type: "Green", volume: greenVolume, patio_nLot, depulped: 0, demucil: 0, centrifug: 0 });
     } else {
-      // Washing ma senza despolpamento → Natural
-      lots.push({
-        key: "natural_washed", type: "Natural", volume: matureGreenVolume, patio_nLot,
-        depulped: 0, demucil: 0, centrifug: 0,
-      });
+      lots.push({ key: "natural_washed", type: "Natural", volume: matureGreenVolume, patio_nLot, depulped: 0, demucil: 0, centrifug: 0 });
     }
 
     return lots;
@@ -131,7 +138,9 @@ const WashDevide = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (totalVolume === 0) { alert("Nessun lotto selezionato."); return; }
-    if (!selectedDate) { alert("Seleziona una data."); return; }
+
+    const error = validateDate(selectedDate);
+    if (error) { alert(error); return; }
 
     const initial = {};
     previewLots.forEach((l) => { initial[l.key] = patioOptions[0]?.name || ""; });
@@ -194,6 +203,9 @@ const WashDevide = () => {
     }
   };
 
+  // Messaggio di avviso data sotto il campo
+  const dateError = selectedDate ? validateDate(selectedDate) : null;
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
@@ -244,7 +256,6 @@ const WashDevide = () => {
               <input type="checkbox" checked={isDepulped} onChange={() => setIsDepulped(!isDepulped)} />
               Despolpador (separa CD da Green)
             </label>
-
             {isDepulped && (
               <div className="lot-ranges" style={{ padding: "1rem" }}>
                 <label>
@@ -253,26 +264,19 @@ const WashDevide = () => {
                     onChange={(e) => setCdDepulped(parseInt(e.target.value))} />
                   Green: <strong>{100 - cdDepulped}%</strong> ({greenVolume.toLocaleString("it-IT")} L)
                 </label>
-
-                {/* Lavorazioni aggiuntive sul CD */}
                 <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid var(--color-border-light)" }}>
-                  <div className="info-section-title" style={{ marginBottom: "0.5rem" }}>
-                    Lavorazioni aggiuntive sul CD
-                  </div>
+                  <div className="info-section-title" style={{ marginBottom: "0.5rem" }}>Lavorazioni aggiuntive sul CD</div>
                   <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                    <input type="checkbox" checked={isDesmucilado}
-                      onChange={() => setIsDesmucilado(!isDesmucilado)} />
+                    <input type="checkbox" checked={isDesmucilado} onChange={() => setIsDesmucilado(!isDesmucilado)} />
                     Desmucilador
                   </label>
                   <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <input type="checkbox" checked={isCentrifuged}
-                      onChange={() => setIsCentrifuged(!isCentrifuged)} />
+                    <input type="checkbox" checked={isCentrifuged} onChange={() => setIsCentrifuged(!isCentrifuged)} />
                     Centrifuga
                   </label>
                 </div>
               </div>
             )}
-
             {!isDepulped && (
               <p className="text-muted" style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>
                 Senza despolpador il Mature+Green sarà classificato come <strong>Natural</strong>
@@ -297,7 +301,6 @@ const WashDevide = () => {
                   <span className="text-muted" style={{ fontSize: "0.85rem" }}>
                     {lot.volume.toLocaleString("it-IT")} L
                   </span>
-                  {/* Mostra lavorazioni aggiuntive CD */}
                   {lot.type === "CD" && (lot.demucil || lot.centrifug) && (
                     <span style={{ fontSize: "0.75rem", color: "var(--color-primary)", marginLeft: "6px" }}>
                       {[lot.demucil && "Desmucil.", lot.centrifug && "Centrifuga"].filter(Boolean).join(" + ")}
@@ -368,8 +371,26 @@ const WashDevide = () => {
 
         <label>
           Data:
-          <input type="date" value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)} required />
+          <input
+            type="date"
+            value={selectedDate}
+            min={minDate || undefined}
+            max={today}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            required
+          />
+          {/* Avviso in tempo reale sotto il campo */}
+          {dateError && (
+            <span style={{ color: "var(--color-danger)", fontSize: "0.82rem", marginTop: "4px", display: "block" }}>
+              ⚠️ {dateError}
+            </span>
+          )}
+          {/* Suggerimento data minima se ci sono lotti selezionati */}
+          {minDate && !dateError && selectedLots.length > 0 && (
+            <span style={{ color: "var(--color-text-muted)", fontSize: "0.82rem", marginTop: "4px", display: "block" }}>
+              Data minima: {new Date(minDate).toLocaleDateString("it-IT")}
+            </span>
+          )}
         </label>
 
         <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
@@ -379,7 +400,7 @@ const WashDevide = () => {
 
         <div className="button-container">
           <button type="submit" className="action-button"
-            disabled={!selectedDate || selectedLots.length === 0}>
+            disabled={!selectedDate || selectedLots.length === 0 || !!dateError}>
             Avanti
           </button>
           <button type="button" className="action-button cancel" onClick={handleCancel}>

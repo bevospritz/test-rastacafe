@@ -1,16 +1,17 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import "../Traceability.css";
+import ProtectedLink from "../../../components/ProtectedLink";
 
 const STEPS = [
-  { label: "New Lot",      path: "new-lot" },
-  { label: "Wash & Divide", path: "wash-devide" },
-  { label: "Drying",       path: "drying" },
-  { label: "Fermentation", path: "fermentation" },
-  { label: "Resting",      path: "resting" },
-  { label: "Cleaning",     path: "cleaning" },
-  { label: "Stocking",     path: "stocking" },
-  { label: "Selling",      path: "selling" },
+  { label: "New Lot",       path: "new-lot",      permission: "traceability" },
+  { label: "Wash & Divide", path: "wash-devide",  permission: "traceability" },
+  { label: "Drying",        path: "drying",        permission: "traceability" },
+  { label: "Fermentation",  path: "fermentation",  permission: "traceability" },
+  { label: "Resting",       path: "resting",       permission: "traceability" },
+  { label: "Cleaning",      path: "cleaning",      permission: "traceability" },
+  { label: "Stocking",      path: "stocking",      permission: "stocking" },
+  { label: "Selling",       path: "selling",       permission: "selling" },
 ];
 
 const ManageLot = () => {
@@ -22,13 +23,14 @@ const ManageLot = () => {
       <p className="page-subtitle">Seleziona la fase di lavorazione</p>
       <div className="button-container-nav">
         {STEPS.map((step) => (
-          <button
-            key={step.path}
-            className="action-button"
-            onClick={() => navigate(`/dashboard/traceability/manage-lot/${step.path}`)}
-          >
-            {step.label}
-          </button>
+          <ProtectedLink key={step.path} permission={step.permission}>
+            <button
+              className="action-button"
+              onClick={() => navigate(`/dashboard/traceability/manage-lot/${step.path}`)}
+            >
+              {step.label}
+            </button>
+          </ProtectedLink>
         ))}
       </div>
     </div>
