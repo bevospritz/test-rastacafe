@@ -180,6 +180,36 @@ app.get("/api/plots", async (req, res) => {
   }
 });
 
+// Endpoint per ottenere le statistiche di una farm
+app.get("/api/farm/:id/stats", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await connection.query(
+      `SELECT 
+        COUNT(*) AS nPlots,
+        COALESCE(SUM(surface), 0) AS totalSurface,
+        COALESCE(ROUND(AVG(YEAR(CURDATE()) - age)), 0) AS avgAge
+       FROM plots WHERE farmId = ?`,
+      [id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// Endpoint per modificare il nome di una farm
+app.patch("/api/farm/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  try {
+    await connection.query("UPDATE farm SET name = ? WHERE id = ?", [name, id]);
+    res.json({ message: "Farm aggiornata" });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
 // Endpoint per ottenere gli utenti
 app.get("/api/users", async (req, res) => {
   try {
