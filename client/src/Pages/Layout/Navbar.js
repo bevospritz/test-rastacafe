@@ -20,7 +20,7 @@ function Navbar() {
     try {      
       await axios.post('http://localhost:5000/logout', {}, { withCredentials: true });
       setUser(null);         
-      navigate('/login');      
+      navigate('/login', { state: { loggedOut: true } });      
     } catch (error) {
       console.error('Logout error:', error);
     }
