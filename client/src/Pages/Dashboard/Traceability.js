@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useLang } from "../../LanguageContext";
 import "./Traceability.css";
 
-const CARDS = [
+
+const Traceability = () => {
+  const { t } = useLang();
+  const CARDS = useMemo(() =>[
   {
     key: "newLots",
     className: "card-nuovi-lotti",
-    title: "Nuovi Lotti",
+    title: t("newLots"),
     endpoint: "/api/newlot",
-    empty: "Nessun nuovo lotto",
+    empty: t("noNewLots"),
     columns: ["Data", "Talhão", "Volume", "Metodo", "Tipo"],
     renderRow: (lot) => (
       <tr key={lot.id}>
@@ -24,10 +28,10 @@ const CARDS = [
   {
     key: "patios",
     className: "card-patios",
-    title: "Patios",
+    title: t("patios"),
     endpoint: "/api/patiocard",
-    empty: "Nessun patio attivo",
-    columns: ["Data", "Talhão", "Patio", "Volume", "Tipo"],
+    empty: t("noPatios"),
+    columns: ["Data", "Talhão", "Terreiro", "Volume", "Tipo"],
     renderRow: (patio) => (
       <tr key={patio.id}>
         <td>{new Date(patio.date).toLocaleDateString("it-IT")}</td>
@@ -43,10 +47,10 @@ const CARDS = [
   {
     key: "dryers",
     className: "card-dryer",
-    title: "Dryer",
+    title: t("dryers"),
     endpoint: "/api/dryercard",
-    empty: "Nessun dryer attivo",
-    columns: ["Data", "Talhão", "Dryer", "Volume", "Tipo"],
+    empty: t("noDryers"),
+    columns: ["Data", "Talhão", "Secador", "Volume", "Tipo"],
     renderRow: (dryer) => (
       <tr key={dryer.id}>
         <td>{new Date(dryer.date).toLocaleDateString("it-IT")}</td>
@@ -60,10 +64,10 @@ const CARDS = [
   {
     key: "fermentations",
     className: "card-fermentazioni",
-    title: "Fermentazioni",
+    title: t("fermentations"),
     endpoint: "/api/fermentationcard",
-    empty: "Nessuna fermentazione attiva",
-    columns: ["Data", "Talhão", "Lotto", "Volume", "Metodo"],
+    empty: t("noFermentations"),
+    columns: ["Data", "Talhão", "Lote", "Volume", "Metodo"],
     renderRow: (f) => (
       <tr key={f.id}>
         <td>{new Date(f.date).toLocaleDateString("it-IT")}</td>
@@ -77,9 +81,9 @@ const CARDS = [
   {
     key: "rests",
     className: "card-rest",
-    title: "Tulha / Rest",
+    title: t("rests"),
     endpoint: "/api/restcard",
-    empty: "Nessun lotto in riposo",
+    empty: t("noRests"),
     columns: ["Data", "Talhão", "Tulha", "Volume", "Tipo"],
     renderRow: (r) => (
       <tr key={r.id}>
@@ -94,10 +98,10 @@ const CARDS = [
   {
     key: "stocking",
     className: "card-stocking",
-    title: "Stocking",
+    title: t("stocking"),
     endpoint: "/api/stockingcard",
-    empty: "Nessun lotto stoccato",
-    columns: ["Data", "Lotto", "Talhão", "Bags", "Tipo", "Deposito"],
+    empty: t("noStocking"),
+    columns: ["Data", "Lote", "Talhão", "Sacas", "Tipo", "Armazem"],
     renderRow: (s) => (
       <tr key={s.id}>
         <td>{new Date(s.date).toLocaleDateString("it-IT")}</td>
@@ -108,16 +112,15 @@ const CARDS = [
         <td>
           {s.deposit || (
             <span style={{ color: "#aaa", fontStyle: "italic" }}>
-              Vendita diretta
+              {t("directSale")}
             </span>
           )}
         </td>
       </tr>
     ),
   },
-];
+], [t]);
 
-const Traceability = () => {
   const [showTraceability, setShowTraceability] = useState(true);
   const [cardData, setCardData] = useState({
     newLots: [],
@@ -158,27 +161,27 @@ const Traceability = () => {
     fetchData();
     window.addEventListener("focus", fetchData);
     return () => window.removeEventListener("focus", fetchData);
-  }, []);
+  }, [CARDS]);
 
   return (
     <div>
       {showTraceability && (
         <div className="traceability-wrapper">
-          <h2>Tracciabilità</h2>
-          <p className="page-subtitle">Panoramica dei lotti in lavorazione</p>
+          <h2>{t("traceability").toUpperCase()}</h2>
+          <p className="page-subtitle">{t("traceabilitySubtitle")}</p>
 
           <div className="traceability-actions">
             <button
               className="action-button"
               onClick={() => navigate("/dashboard/traceability/manage-lot")}
             >
-              Gestione Lotto
+              {t("manageLot")}
             </button>
             <button
               className="action-button"
               onClick={() => navigate("/dashboard/traceability/lot-history")}
             >
-              Storia Lotto
+              {t("lotHistory")}
             </button>
           </div>
 

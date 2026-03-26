@@ -1,26 +1,31 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import "../Traceability.css";
 import ProtectedLink from "../../../components/ProtectedLink";
+import { useLang } from "../../../LanguageContext";
+import "../Traceability.css";
 
-const STEPS = [
-  { label: "New Lot",       path: "new-lot",      permission: "traceability" },
-  { label: "Wash & Divide", path: "wash-devide",  permission: "traceability" },
-  { label: "Drying",        path: "drying",        permission: "traceability" },
-  { label: "Fermentation",  path: "fermentation",  permission: "traceability" },
-  { label: "Resting",       path: "resting",       permission: "traceability" },
-  { label: "Cleaning",      path: "cleaning",      permission: "traceability" },
-  { label: "Stocking",      path: "stocking",      permission: "stocking" },
-  { label: "Selling",       path: "selling",       permission: "selling" },
-];
+
+
 
 const ManageLot = () => {
+  const { t } = useLang();
   const navigate = useNavigate();
+
+  const STEPS = [
+  { label: t("newLot"),       path: "new-lot",      permission: "traceability" },
+  { label: t("washDivide"), path: "wash-devide",  permission: "traceability" },
+  { label: t("drying"),        path: "drying",        permission: "traceability" },
+  { label: t("fermentation"),  path: "fermentation",  permission: "traceability" },
+  { label: t("tulha"),       path: "resting",       permission: "traceability" },
+  { label: t("cleaning"),      path: "cleaning",      permission: "traceability" },
+  { label: t("stocking"),      path: "stocking",      permission: "stocking" },
+  { label: t("selling"),       path: "selling",       permission: "selling" },
+];
 
   return (
     <div className="form-container">
-      <h2>Gestione Lotto</h2>
-      <p className="page-subtitle">Seleziona la fase di lavorazione</p>
+      <h2>{t("manageLot")}</h2>
+      <p className="page-subtitle">{t("manageLotSubtitle")}</p>
       <div className="button-container-nav">
         {STEPS.map((step) => (
           <ProtectedLink key={step.path} permission={step.permission}>

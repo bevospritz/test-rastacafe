@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
 
 const NewLot = () => {
+  const { t } = useLang();
   const [form, setForm] = useState({
     plot: "",
     volume: "",
@@ -59,12 +61,12 @@ const NewLot = () => {
 
   return (
     <div className="form-container">
-      <h2>New Lot</h2>
+      <h2>{t("newLot")}</h2>
       <form onSubmit={handleSubmit}>
         <label>
-          Talhão:
+          {t("plot")}:
           <select name="plot" value={form.plot} onChange={handleChange} required>
-            <option value="">Seleziona</option>
+            <option value="">{t("select")}</option>
             {plots.map((plot) => (
               <option key={plot.id} value={plot.codename}>
                 {plot.codename}
@@ -74,7 +76,7 @@ const NewLot = () => {
         </label>
 
         <label>
-          Volume:
+          {t("volume")}:
           <input
             type="number"
             name="volume"
@@ -86,7 +88,7 @@ const NewLot = () => {
         </label>
 
         <label>
-          Data:
+          {t("date")}:
           <input
             type="date"
             name="date"
@@ -97,26 +99,26 @@ const NewLot = () => {
         </label>
 
         <label>
-          Metodo:
+          {t("method")}:
           <select name="method" value={form.method} onChange={handleChange} required>
-            <option value="">Seleziona</option>
-            <option value="Mechanical">Meccanica</option>
-            <option value="Manual">Manuale</option>
+            <option value="">{t("select")}</option>
+            <option value="Mechanical">{t("mechanical")}</option>
+            <option value="Manual">{t("manual")}</option>
           </select>
         </label>
 
         <label>
-          Tipo:
+          {t("type")}:
           <select name="type" value={form.type} onChange={handleChange} required>
-            <option value="">Seleziona</option>
-            <option value="Natural">Naturale</option>
-            <option value="Vassoura">Vassoura</option>
+            <option value="">{t("select")}</option>
+            <option value="Natural">{t("natural")}</option>
+            <option value="Vassoura">{t("vassoura")}</option>
           </select>
         </label>
 
         <div className="button-container">
-          <button type="submit" className="action-button">Conferma</button>
-          <button type="button" className="action-button cancel" onClick={handleCancel}>Annulla</button>
+          <button type="submit" className="action-button">{t("confirm")}</button>
+          <button type="button" className="action-button cancel" onClick={handleCancel}>{t("cancel")}</button>
         </div>
       </form>
     </div>

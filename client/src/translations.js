@@ -1,4 +1,3 @@
-
 const translations = {
   IT: {
     // Dashboard
@@ -15,11 +14,27 @@ const translations = {
     manageFarm: "Gestione Fattoria",
     traceability: "Tracciabilità",
 
+    //Tracciabilità
+    newLots: "Nuovi Lotti",
+    noNewLots: "Nessun nuovo lotto",
+    patios: "Terreni",
+    noPatios: "Nessun terreno attivo",
+    dryers: "Essiccatori",
+    noDryers: "Nessun essiccatore attivo",
+    fermentations: "Fermentazioni",
+    noFermentations: "Nessuna fermentazione attiva",
+    rests: "Tulha / Riposo",
+    noRests: "Nessun lotto in riposo",
+    noStocking: "Nessun lotto stoccato",
+    type: "Tipo",
+    lot: "Lotto",
+    traceabilitySubtitle: "Panoramica dei lotti in lavorazione",
+
     // ManageLot
     manageLot: "Gestione Lotto",
     manageLotSubtitle: "Seleziona la fase di lavorazione",
     newLot: "Nuovo Lotto",
-    washDivide: "Wash & Divide",
+    washDivide: "Lavaggio e Separazione",
     drying: "Essiccazione",
     fermentation: "Fermentazione",
     resting: "Riposo",
@@ -46,6 +61,10 @@ const translations = {
     date: "Data",
     confirm: "Conferma",
     cancel: "Annulla",
+    natural: "Naturale",
+    vassoura: "Vassoura",
+    mechanical: "Meccanica",
+    manual: "Manuale",
 
     // WashDevide
     washDivideTitle: "Wash & Divide",
@@ -53,6 +72,23 @@ const translations = {
     washing: "Lavaggio",
     matureGreen: "Maturo+Verde",
     dry: "Boia",
+    stepDryMatureGreen: "Boia vs Maturo+Verde",
+    stepPeneirao: "Peneirão",
+    stepDespolpador: "Despolpador",
+    stepSummary: "Riepilogo",
+    noLotsAvailable: "Nessun lotto disponibile",
+    selectDate: "Seleziona una data.",
+    dateInFuture: "La data non può essere nel futuro",
+    dateBeforeHarvest:
+      "La data non può essere precedente alla data di raccolta più recente",
+    minDateHint: "Data minima",
+    assignPatio: "Assegna ogni lotto a un patio",
+    naturalLot: "Lotto Naturale",
+    selectPatio: "Seleziona",
+    additionalProcessingCD: "Lavorazioni aggiuntive sul CD",
+    noDespolpador: "Senza despolpador il Mature+Green sarà classificato come",
+    totalVolume: "Volume totale",    
+    confirmSend: "Conferma",
 
     // Fermentation
     fermentationTitle: "Fermentazione",
@@ -153,7 +189,6 @@ const translations = {
     prune: "Potatura",
     forming: "Formazione",
 
-
     //Caricamento appezzamenti da file
     addFarmFirst: "Seleziona prima una fattoria.",
     loading: "Caricamento in corso...",
@@ -180,14 +215,15 @@ const translations = {
     dryer: "Essicatore",
     tulha: "Tulha",
     centrifuga: "Centrifuga",
-    name: "Nome",  
+    name: "Nome",
     editElement: "Modifica Elemento",
 
     // LotHistory
     lotHistoryTitle: "Storia Lotto",
+    lotHistory: "Storia Lotto",
 
     // Common
-    noData: "Nessun dato disponibile.",    
+    noData: "Nessun dato disponibile.",
     saving: "Salvataggio...",
     success: "Successo",
     error: "Errore",
@@ -213,6 +249,22 @@ const translations = {
     manageFarm: "Gestão da Fazenda",
     traceability: "Rastreabilidade",
 
+    //Tracciabilità
+    newLots: "Novos Lotes",
+    noNewLots: "Nenhum novo lote",
+    patios: "Terreiros",
+    noPatios: "Nenhum terreiro ativo",
+    dryers: "Secadores",
+    noDryers: "Nenhum Secador ativo",
+    fermentations: "Fermentações",
+    noFermentations: "Nenhuma fermentação ativa",
+    rests: "Tulha",
+    noRests: "Nenhum lote na tulha",
+    noStocking: "Nenhum lote armazenado",
+    type: "Tipo",
+    lot: "Lote",
+    traceabilitySubtitle: "Visão geral dos lotes em processamento",
+
     // ManageLot
     manageLot: "Gestão de Lote",
     manageLotSubtitle: "Selecione a fase de processamento",
@@ -222,7 +274,7 @@ const translations = {
     fermentation: "Fermentação",
     resting: "Descanso",
     cleaning: "Beneficiamento",
-    stocking: "Estocagem",
+    stocking: "Armazenagem",
     selling: "Venda",
 
     // Tipi lavorazione — ATTENZIONE alle eccezioni
@@ -244,6 +296,10 @@ const translations = {
     date: "Data",
     confirm: "Confirmar",
     cancel: "Cancelar",
+    natural: "Natural",
+    vassoura: "Vassoura",
+    mechanical: "Mecânica",
+    manual: "Manual",
 
     // WashDevide
     washDivideTitle: "Lavagem & Separação",
@@ -251,6 +307,22 @@ const translations = {
     washing: "Lavagem",
     matureGreen: "Maduro+Verde",
     dry: "Boia",
+    stepDryMatureGreen: "Boia vs Maduro+Verde",
+    stepPeneirao: "Peneirão",
+    stepDespolpador: "Despolpador",
+    stepSummary: "Resumo",
+    noLotsAvailable: "Nenhum lote disponível",
+    selectDate: "Selecione uma data.",
+    dateInFuture: "A data não pode ser no futuro",
+    dateBeforeHarvest: "A data não pode ser anterior à colheita mais recente",
+    minDateHint: "Data mínima",
+    assignPatio: "Atribua cada lote a um pátio",
+    naturalLot: "Lote Natural",
+    selectPatio: "Selecionar",
+    additionalProcessingCD: "Processamentos adicionais no CD",
+    noDespolpador: "Sem despolpador o Maduro+Verde será classificado como",
+    totalVolume: "Volume total",
+    confirmSend: "Confirmar",
 
     // Fermentation
     fermentationTitle: "Fermentação",
@@ -335,7 +407,8 @@ const translations = {
     filterByName: "Filtrar por nome...",
     addPlotTitle: "Adicionar Talhão",
     addPlot: "+ Adicionar Talhão",
-    noPlots: "Nenhum talhão encontrado",code: "Codice",
+    noPlots: "Nenhum talhão encontrado",
+    code: "Codice",
     surface: "Superfície (ha)",
     variety: "Variedade",
     nPlants: "N° covas",
@@ -375,15 +448,16 @@ const translations = {
     patio: "Terreiro",
     dryer: "Secador",
     tulha: "Tulha",
-    centrifuga: "Centrifuga", 
-    name: "Nome",  
+    centrifuga: "Centrifuga",
+    name: "Nome",
     editElement: "Editar Elemento",
 
     // LotHistory
     lotHistoryTitle: "Histórico do Lote",
+    lotHistory: "Histórico do Lote",
 
     // Common
-    noData: "Nenhum dado disponível.",    
+    noData: "Nenhum dado disponível.",
     saving: "Salvando...",
     success: "Sucesso",
     error: "Erro",
