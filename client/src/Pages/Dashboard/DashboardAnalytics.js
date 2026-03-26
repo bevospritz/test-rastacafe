@@ -4,6 +4,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
+import { useLang } from "../../LanguageContext";
 import "./DashboardAnalytics.css";
 
 // Palette caffè — terrose e calde
@@ -47,6 +48,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const DashboardAnalytics = () => {
+  const { t } = useLang();
   const [plots, setPlots] = useState([]);
   const [selectedPlot, setSelectedPlot] = useState("");
   const [data, setData] = useState(null);
@@ -98,11 +100,11 @@ const DashboardAnalytics = () => {
       {/* Header */}
       <div className="dash-header">
         <div>
-          <h1 className="dash-title">Dashboard</h1>
-          <p className="dash-subtitle">Analisi produzione per appezzamento</p>
+          <h1 className="dash-title">{t("dashboard")}</h1>
+          <p className="dash-subtitle">{t("dashboardSubtitle")}</p>
         </div>
         <div className="plot-selector-wrap">
-          <label className="plot-selector-label">Appezzamento</label>
+          <label className="plot-selector-label">{t("plot")}</label>
           <select
             className="plot-selector"
             value={selectedPlot}

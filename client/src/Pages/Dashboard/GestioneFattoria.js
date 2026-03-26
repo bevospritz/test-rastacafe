@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
+import { useLang } from "../../LanguageContext";
 import "./Traceability.css";
 
 Modal.setAppElement("#root");
 
 const ManageFarm = () => {
+  const { t } = useLang();
   const [farms, setFarms] = useState([]);
   const [stats, setStats] = useState(null);
   const [newFarm, setNewFarm] = useState("");
@@ -72,14 +74,14 @@ const ManageFarm = () => {
 
   return (
     <div className="form-container">
-      <h2>Gestione Fattoria</h2>
+      <h2>{t("manageFarmTitle")}</h2>
 
       {farms.length === 0 ? (
         <div style={{ textAlign: "center", padding: "2rem 0" }}>
-          <p className="text-muted" style={{ marginBottom: "1rem" }}>Nessuna farm configurata.</p>
+          <p className="text-muted" style={{ marginBottom: "1rem" }}>{t("noFarms")}</p>
           <button className="action-button" style={{ width: "auto", padding: "10px 28px" }}
             onClick={() => setShowAddForm(true)}>
-            + Aggiungi Farm
+            {t("addFarm")}
           </button>
         </div>
       ) : (
@@ -95,34 +97,34 @@ const ManageFarm = () => {
               style={{ backgroundColor: "var(--color-edit)", width: "auto", marginTop: 0, padding: "4px 12px", fontSize: "0.82rem" }}
               onClick={openEdit}
             >
-              Modifica
+              {t("edit")}
             </button>
           </div>
 
           <hr className="card-divider" />
 
           {/* Info dinamiche */}
-          <div className="info-section-title">Informazioni</div>
-          <InfoRow label="N° appezzamenti" value={stats?.nPlots ?? "..."} />
+          <div className="info-section-title">{t("info")}</div>
+          <InfoRow label={t("nFarmlands")} value={stats?.nPlots ?? "..."} />
           <InfoRow
-            label="Superficie totale (ha)"
+            label={t("totalSurface")}
             value={stats ? `${parseFloat(stats.totalSurface).toFixed(2)} ha` : "..."}
           />
           <InfoRow
-            label="Età media piante"
-            value={stats ? `${stats.avgAge} anni` : "..."}
+            label={t("avgAge")}
+            value={stats ? `${stats.avgAge} ${t("years")}` : "..."}
           />
 
           <hr className="card-divider" />
 
           {/* Navigazione */}
-          <div className="info-section-title">Gestione</div>
+          <div className="info-section-title">{t("manage")}</div>
           <div className="button-container" style={{ marginTop: "0.75rem" }}>
             <button className="action-button" onClick={() => navigate("/dashboard/gestione-struttura")}>
-              Struttura
+              {t("structure")}
             </button>
             <button className="action-button" onClick={() => navigate("/dashboard/gestione-appezzamenti")}>
-              Appezzamenti
+              {t("farmlands")}
             </button>
           </div>
         </div>
@@ -131,9 +133,9 @@ const ManageFarm = () => {
       {/* Modal nuova farm */}
       <Modal isOpen={showAddForm} onRequestClose={() => setShowAddForm(false)}
         contentLabel="Nuova Farm" className="modal-content" overlayClassName="modal">
-        <div className="modal-header"><h2>Nuova Farm</h2></div>
+        <div className="modal-header"><h2>{t("newFarm")}</h2></div>
         <div className="modal-body">
-          <label>Nome farm:
+          <label>{t("farmName")}:
             <input type="text" value={newFarm}
               onChange={(e) => setNewFarm(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddFarm()}
@@ -142,18 +144,18 @@ const ManageFarm = () => {
         </div>
         <div className="modal-footer">
           <button className="action-button cancel" style={{ width: "auto", marginRight: "8px" }}
-            onClick={() => setShowAddForm(false)}>Annulla</button>
+            onClick={() => setShowAddForm(false)}>{t("cancel")}</button>
           <button className="action-button save" style={{ width: "auto" }}
-            onClick={handleAddFarm}>Aggiungi</button>
+            onClick={handleAddFarm}>{t("add")}</button>
         </div>
       </Modal>
 
       {/* Modal modifica farm */}
       <Modal isOpen={showEditForm} onRequestClose={() => setShowEditForm(false)}
         contentLabel="Modifica Farm" className="modal-content" overlayClassName="modal">
-        <div className="modal-header"><h2>Modifica Farm</h2></div>
+        <div className="modal-header"><h2>{t("editFarm")}</h2></div>
         <div className="modal-body">
-          <label>Nome farm:
+          <label>{t("farmName")}:
             <input type="text" value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleEditFarm()}
@@ -162,9 +164,9 @@ const ManageFarm = () => {
         </div>
         <div className="modal-footer">
           <button className="action-button cancel" style={{ width: "auto", marginRight: "8px" }}
-            onClick={() => setShowEditForm(false)}>Annulla</button>
+            onClick={() => setShowEditForm(false)}>{t("cancel")}</button>
           <button className="action-button save" style={{ width: "auto" }}
-            onClick={handleEditFarm}>Salva</button>
+            onClick={handleEditFarm}>{t("save")}</button>
         </div>
       </Modal>
     </div>

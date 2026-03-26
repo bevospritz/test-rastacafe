@@ -4,8 +4,10 @@ import { Link } from "react-router-dom";
 import "./Sidebar.css";
 import "../Dashboard/Dashboard.css";
 import ProtectedLink from "../../components/ProtectedLink";
+import { useLang } from "../../LanguageContext"; 
 
 function Sidebar() {
+  const { t } = useLang();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [farms, setFarms] = useState([]);
 
@@ -57,20 +59,20 @@ function Sidebar() {
               ))}
             </li>
             <li>
-              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/dashboard">{t("dashboard")}</Link>
             </li>
             <ProtectedLink permission="users">
               <li>
-                <Link to="/dashboard/users">Utenti</Link>
+                <Link to="/dashboard/users">{t("users")}</Link>
               </li>
             </ProtectedLink>
             <ProtectedLink permission="structure">
               <li>
-                <Link to="/dashboard/structure">Manage Farm</Link>
+                <Link to="/dashboard/structure">{t("manageFarm")}</Link>
               </li>
             </ProtectedLink>
             <li>
-              <Link to="/dashboard/traceability">Tracciabilità</Link>
+              <Link to="/dashboard/traceability">{t("traceability")}</Link>
             </li>
           </ul>
         </nav>

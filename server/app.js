@@ -444,6 +444,21 @@ app.patch("/api/plots/:id", async (req, res) => {
   }
 });
 
+// Endpoint per modificare elementi della farm
+app.patch("/api/elements/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, notes } = req.body;
+  try {
+    await connection.query(
+      "UPDATE elements SET name = ?, notes = ? WHERE id = ?",
+      [name, notes || null, id]
+    );
+    res.json({ message: "Elemento aggiornato" });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
 // Endpoint per l'upload degli appezzamenti tramite file Excel
 app.post("/api/excelplots", upload.single("file"), async (req, res) => {
   try {

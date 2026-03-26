@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useLang } from "../../LanguageContext";
 import "./Traceability.css";
 
 const ROLES = ["admin", "worker", "viewer"];
 
 const GestioneUsers = () => {
+  const { t } = useLang();
   const [utenti, setUtenti] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +63,7 @@ const GestioneUsers = () => {
 
   return (
     <div className="form-container">
-      <h2>Gestione Utenti</h2>
+      <h2>{t("usersTitle")}</h2>
 
       {/* Bottone aggiungi */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
@@ -70,7 +72,7 @@ const GestioneUsers = () => {
           style={{ width: "auto", marginTop: 0, padding: "8px 20px" }}
           onClick={() => setShowForm((prev) => !prev)}
         >
-          {showForm ? "Annulla" : "+ Nuovo Utente"}
+          {showForm ? t("cancel") : "+ " + t("newUser")}
         </button>
       </div>
 
@@ -82,8 +84,8 @@ const GestioneUsers = () => {
           border: "1px solid var(--color-edit-border)",
           borderRadius: "var(--radius-md)"
         }}>
-          <div className="info-section-title" style={{ marginBottom: "0.75rem" }}>Nuovo Utente</div>
-          <label>Email:
+          <div className="info-section-title" style={{ marginBottom: "0.75rem" }}>{t("newUser")}</div>
+          <label>{t("email")}
             <input
               type="email"
               value={newUser.email}
@@ -92,7 +94,7 @@ const GestioneUsers = () => {
               required
             />
           </label>
-          <label>Password:
+          <label>{t("password")}
             <input
               type="password"
               value={newUser.password}
@@ -102,7 +104,7 @@ const GestioneUsers = () => {
               required
             />
           </label>
-          <label>Ruolo:
+          <label>{t("role")}:
             <select
               value={newUser.role}
               onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value }))}
@@ -114,10 +116,10 @@ const GestioneUsers = () => {
           </label>
           <div className="button-container" style={{ marginTop: "0.5rem" }}>
             <button type="submit" className="action-button save" disabled={isSubmitting}>
-              {isSubmitting ? "Creazione..." : "Crea Utente"}
+              {isSubmitting ? "Creazione..." : t("createUser")}
             </button>
             <button type="button" className="action-button cancel" onClick={() => setShowForm(false)}>
-              Annulla
+              {t("cancel")}
             </button>
           </div>
         </form>
@@ -125,15 +127,15 @@ const GestioneUsers = () => {
 
       {/* Tabella utenti */}
       {utenti.length === 0 ? (
-        <p className="empty-state">Nessun utente trovato.</p>
+        <p className="empty-state">{t("noUsers")}</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Email</th>
-              <th>Ruolo</th>
-              <th>Azioni</th>
+              <th>{t("id")}</th>
+              <th>{t("email")}</th>
+              <th>{t("role")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -152,7 +154,7 @@ const GestioneUsers = () => {
                     style={{ backgroundColor: "var(--color-danger)", marginTop: 0, padding: "4px 12px", width: "auto" }}
                     onClick={() => handleDeleteUser(u.id)}
                   >
-                    Elimina
+                    {t("delete")}
                   </button>
                 </td>
               </tr>
