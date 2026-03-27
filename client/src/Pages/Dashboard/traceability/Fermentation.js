@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
 
 // Helpers date
@@ -55,6 +56,7 @@ const DateInput = ({ value, onChange, minDate, label }) => {
 };
 
 function Fermentation() {
+  const { t } = useLang();
   const [step, setStep] = useState(null);
   const [patioLots, setPatioLots] = useState([]);
   const [selectedLots, setSelectedLots] = useState([]);
@@ -233,23 +235,23 @@ function Fermentation() {
 
   return (
     <div className="form-container">
-      <h2>Fermentation</h2>
+      <h2>{t("fermentationTitle")}</h2>
 
       <div className="button-container">
         <button type="button" className="action-button" onClick={() => resetStep("start")}>
-          Inizia Fermentazione
+          {t("startFermentation")}
         </button>
         <button type="button" className="action-button" onClick={() => resetStep("end")}>
-          Finisci Fermentazione
+          {t("endFermentation")}
         </button>
       </div>
 
       {step === "start" && (
         <>
-          <h3>Seleziona Lotti dal Patio</h3>
+          <h3>{t("selectPatioLots")}</h3>
           <table>
             <thead>
-              <tr><th></th><th>Data</th><th>Volume</th><th>Patio</th><th>Tipo</th></tr>
+              <tr><th></th><th>{t("date")}</th><th>{t("volume")}</th><th>{t("patio")}</th><th>{t("type")}</th></tr>
             </thead>
             <tbody>
               {patioLots.map((lot) => (
@@ -262,7 +264,7 @@ function Fermentation() {
                 </tr>
               ))}
               {patioLots.length === 0 && (
-                <tr><td colSpan={5} className="empty-state">Nessun lotto disponibile</td></tr>
+                <tr><td colSpan={5} className="empty-state">{t("noLotsAvailable")}</td></tr>
               )}
             </tbody>
           </table>
@@ -285,50 +287,50 @@ function Fermentation() {
                 );
               })}
               <div className="total-volume-box">
-                Volume totale: <strong>{calculateTotalPartialVolume().toLocaleString("it-IT")} L</strong>
+                {t("totalVolumeSelected")}: <strong>{calculateTotalPartialVolume().toLocaleString("it-IT")} L</strong>
               </div>
             </div>
           )}
 
           <DateInput
-            label="Data Inizio"
+            label={t("startDate")}
             value={form.date}
             minDate={minDateStart}
             onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
           />
 
           <label>
-            Ora Inizio:
+            {t("timeIn")}:
             <input type="time" value={form.timeIn}
               onChange={(e) => setForm((prev) => ({ ...prev, timeIn: e.target.value }))} required />
           </label>
 
           <label>
-            Tipo Fermentazione:
+            {t("fermentationType")}:
             <select value={fermentationType} onChange={(e) => setFermentationType(e.target.value)} required>
-              <option value="Barrel">Botti</option>
-              <option value="Tank">Tank</option>
-              <option value="Rotative">Rotativo</option>
-              <option value="Bag">Big Bag</option>
+              <option value="Barrel">{t("barrel")}</option>
+              <option value="Tank">{t("tank")}</option>
+              <option value="Rotative">{t("rotative")}</option>
+              <option value="Bag">{t("bigBag")}</option>
             </select>
           </label>
 
           <div className="button-container">
             <button className="action-button" onClick={handleSubmitStart}
               disabled={!!dateErrorStart || !form.date || !form.timeIn || selectedLots.length === 0}>
-              Conferma
+              {t("confirm")}
             </button>
-            <button className="action-button cancel" onClick={handleCancel}>Annulla</button>
+            <button className="action-button cancel" onClick={handleCancel}>{t("cancel")}</button>
           </div>
         </>
       )}
 
       {step === "end" && (
         <>
-          <h3>Lotti in Fermentazione</h3>
+          <h3>{t("lotsFermenting")}</h3>
           <table>
             <thead>
-              <tr><th></th><th>Data</th><th>Volume</th><th>Metodo</th><th>Tipo</th></tr>
+              <tr><th></th><th>{t("date")}</th><th>{t("volume")}</th><th>{t("method")}</th><th>{t("type")}</th></tr>
             </thead>
             <tbody>
               {activeFermentations.map((lot) => (
@@ -341,29 +343,29 @@ function Fermentation() {
                 </tr>
               ))}
               {activeFermentations.length === 0 && (
-                <tr><td colSpan={5} className="empty-state">Nessuna fermentazione attiva</td></tr>
+                <tr><td colSpan={5} className="empty-state">{t("noFermentations")}</td></tr>
               )}
             </tbody>
           </table>
 
           <DateInput
-            label="Data Fine"
+            label={t("endDate")}
             value={form.date}
             minDate={minDateEnd}
             onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
           />
 
           <label>
-            Ora Fine:
+            {t("endTime")}:
             <input type="time" value={form.timeOut}
               onChange={(e) => setForm((prev) => ({ ...prev, timeOut: e.target.value }))} required />
           </label>
 
           <label>
-            Patio:
+            {t("patio")}:
             <select value={form.patio}
               onChange={(e) => setForm((prev) => ({ ...prev, patio: e.target.value }))} required>
-              <option value="">Seleziona un patio</option>
+              <option value="">{t("selectPatio")}</option>
               {patioOptions.map((patio) => (
                 <option key={patio.id} value={patio.name}>{patio.name}</option>
               ))}
@@ -373,9 +375,9 @@ function Fermentation() {
           <div className="button-container">
             <button className="action-button" onClick={handleSubmitEnd}
               disabled={!!dateErrorEnd || !form.date || !form.timeOut || !form.patio || selectedLots.length === 0}>
-              Conferma
+              {t("confirm")}
             </button>
-            <button className="action-button cancel" onClick={handleCancel}>Annulla</button>
+            <button className="action-button cancel" onClick={handleCancel}>{t("cancel")}</button>
           </div>
         </>
       )}

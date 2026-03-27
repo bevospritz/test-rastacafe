@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
 
 const toYMD = (d) => {
@@ -10,6 +11,7 @@ const toYMD = (d) => {
 const today = toYMD(new Date());
 
 const Resting = () => {
+  const { t } = useLang();
   const [selectedLots, setSelectedLots] = useState([]);
   const [dryerLots, setDryerLots] = useState([]);
   const [patioLots, setPatioLots] = useState([]);
@@ -18,22 +20,22 @@ const Resting = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     tulha: "",
-    dateIn: "",
+    date: "",
     timeIn: "",
   });
 
   const minDate =
     selectedLots.length > 0
       ? selectedLots.reduce((max, lot) => {
-          const d = toYMD(lot.dateIn);
+          const d = toYMD(lot.date);
           return d > max ? d : max;
         }, "1900-01-01")
       : null;
 
-  const validateDate = (dateIn) => {
-    if (!dateIn) return "Seleziona una data.";
-    if (dateIn > today) return `La data non può essere nel futuro.`;
-    if (minDate && dateIn < minDate)
+  const validateDate = (date) => {
+    if (!date) return "Seleziona una data.";
+    if (date > today) return `La data non può essere nel futuro.`;
+    if (minDate && date < minDate)
       return `La data non può essere precedente al patio più recente (${new Date(minDate).toLocaleDateString("it-IT")}).`;
     return null;
   };
@@ -176,7 +178,7 @@ const Resting = () => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    const error = validateDate(form.dateIn);
+    const error = validateDate(form.date);
     if (error) {
       alert(error);
       return;
@@ -192,7 +194,7 @@ const Resting = () => {
       const restPayload = {
         tulha: form.tulha,
         volume: calculateTotalPartialVolume(),
-        dateIn: form.dateIn,
+        date: form.date,
         timeIn: form.timeIn,
         lots: selectedLots.map((lot) => ({
           prev_nLot_dryer:
@@ -261,17 +263,17 @@ const Resting = () => {
 
   return (
     <div className="form-container">
-      <h2>Resting</h2>
+      <h2>{t("restingTitle")}</h2>
       <form onSubmit={handleSubmit}>
         <h3>Patio</h3>
         <table>
           <thead>
             <tr>
               <th></th>
-              <th>Data</th>
-              <th>Volume</th>
-              <th>Patio</th>
-              <th>Tipo</th>
+              <th>{t("date")}</th>
+              <th>{t("volume")}</th>
+              <th>{t("patio")}</th>
+              <th>{t("type")}</th>
             </tr>
           </thead>
           <tbody>
@@ -288,7 +290,7 @@ const Resting = () => {
                     onChange={() => handleSelectPatioLot(lot)}
                   />
                 </td>
-                <td>{new Date(lot.dateIn).toLocaleDateString("it-IT")}</td>
+                <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
                 <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
@@ -297,22 +299,22 @@ const Resting = () => {
             {patioLots.length === 0 && (
               <tr>
                 <td colSpan={5} className="empty-state">
-                  Nessun lotto disponibile
+                  {t("noLotsAvailable")}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
 
-        <h3>Dryer</h3>
+        <h3>{t("dryer")}</h3>
         <table>
           <thead>
             <tr>
               <th></th>
-              <th>Data</th>
-              <th>Volume</th>
-              <th>Dryer</th>
-              <th>Tipo</th>
+              <th>{t("date")}</th>
+              <th>{t("volume")}</th>
+              <th>{t("dryer")}</th>
+              <th>{t("type")}</th>
             </tr>
           </thead>
           <tbody>
@@ -329,7 +331,7 @@ const Resting = () => {
                     onChange={() => handleSelectDryerLot(lot)}
                   />
                 </td>
-                <td>{new Date(lot.dateIn).toLocaleDateString("it-IT")}</td>
+                <td>{new Date(lot.date).toLocaleDateString("it-IT")}</td>
                 <td>{getDisplayVolume(lot).toLocaleString("it-IT")}</td>
                 <td>{lot.name}</td>
                 <td>{lot.type}</td>
@@ -338,7 +340,7 @@ const Resting = () => {
             {dryerLots.length === 0 && (
               <tr>
                 <td colSpan={5} className="empty-state">
-                  Nessun lotto disponibile
+                  {t("noLotsAvailable")}
                 </td>
               </tr>
             )}
@@ -359,7 +361,7 @@ const Resting = () => {
                   <label>
                     <strong>
                       {lot.type} –{" "}
-                      {new Date(lot.dateIn).toLocaleDateString("it-IT")}
+                      {new Date(lot.date).toLocaleDateString("it-IT")}
                     </strong>
                     <br />
                     Perc: {perc}% ({usedVol.toLocaleString("it-IT")} L)
@@ -378,7 +380,7 @@ const Resting = () => {
             })}
 
             <div className="total-volume-box">
-              Volume totale selezionato:{" "}
+              {t("totalSelectedVolume")}:{" "}
               <strong>
                 {calculateTotalPartialVolume().toLocaleString("it-IT")} L
               </strong>
@@ -387,7 +389,7 @@ const Resting = () => {
         )}
 
         <label>
-          Tulha:
+          {t("tulha")}:
           <select
             name="tulha"
             value={form.tulha}
@@ -396,7 +398,7 @@ const Resting = () => {
             }
             required
           >
-            <option value="">Seleziona</option>
+            <option value="">{t("select")}</option>
             {tulhas.map((d, i) => (
               <option key={i} value={d.name}>
                 {d.name}
@@ -406,19 +408,19 @@ const Resting = () => {
         </label>
 
         <label>
-          Data:
+          {t("date")}:
           <input
             type="date"
-            name="dateIn"
-            value={form.dateIn}
+            name="date"
+            value={form.date}
             min={minDate || undefined}
             max={today}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, dateIn: e.target.value }))
+              setForm((prev) => ({ ...prev, date: e.target.value }))
             }
             required
           />
-          {form.dateIn && validateDate(form.dateIn) && (
+          {form.date && validateDate(form.date) && (
             <span
               style={{
                 color: "var(--color-danger)",
@@ -426,13 +428,13 @@ const Resting = () => {
                 display: "block",
               }}
             >
-              ⚠️ {validateDate(form.dateIn)}
+              ⚠️ {validateDate(form.date)}
             </span>
           )}
         </label>
 
         <label>
-          Ora:
+          {t("time")}:
           <input
             type="time"
             name="timeIn"
@@ -450,20 +452,20 @@ const Resting = () => {
             className="action-button"
             disabled={
               !form.tulha ||
-              !form.dateIn ||
+              !form.date ||
               !form.timeIn ||
               selectedLots.length === 0 ||
-              !!validateDate(form.dateIn)
+              !!validateDate(form.date)
             }
           >
-            {isSubmitting ? "Salvataggio..." : "Conferma"}
+            {isSubmitting ? "Salvataggio..." : t("confirm")}
           </button>
           <button
             type="button"
             className="action-button cancel"
             onClick={handleCancel}
           >
-            Annulla
+            {t("cancel")}
           </button>
         </div>
       </form>

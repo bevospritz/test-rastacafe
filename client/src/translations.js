@@ -1,3 +1,9 @@
+// import { useLang } from "../../LanguageContext";
+// const { t } = useLang(); 
+// {t("dashboard")}
+
+
+
 const translations = {
   IT: {
     // Dashboard
@@ -99,12 +105,21 @@ const translations = {
     startTime: "Ora Inizio",
     endTime: "Ora Fine",
     fermentationType: "Tipo Fermentazione",
+    barrel: "Botti",
+    tank: "Tank",
+    rotative: "Rotativa",
+    bigBag: "Big Bag",
+    lotsFermenting: "Lotti in fermentazione",
+    
 
     // Drying
     dryingTitle: "Essiccazione",
+    selectPatioLots: "Seleziona i lotti dal Patio",
+    totalVolumeSelected: "Volume totale selezionato",
+    timeIn: "Ora Entrata",
 
     // Resting
-    restingTitle: "Riposo",
+    restingTitle: "Riposo in tulha",
 
     // Cleaning
     cleaningTitle: "Pulizia",
@@ -332,13 +347,21 @@ const translations = {
     endDate: "Data de Término",
     startTime: "Hora de Início",
     endTime: "Hora de Término",
-    fermentationType: "Tipo de Fermentação",
+    fermentationType: "Tipo de Fermentação",    
+    barrel: "Barris",
+    tank: "Tanques",
+    rotative: "Rotativo",
+    bigBag: "Big Bag",
+    lotsFermenting: "Lotes em fermentação",
 
     // Drying
     dryingTitle: "Secagem",
+    selectPatioLots: "Selecione os lotes do Terreiro",
+    totalVolumeSelected: "Volume total selecionado",
+    timeIn: "Hora de Entrada",
 
     // Resting
-    restingTitle: "Descanso",
+    restingTitle: "Tulha",
 
     // Cleaning
     cleaningTitle: "Beneficiamento",

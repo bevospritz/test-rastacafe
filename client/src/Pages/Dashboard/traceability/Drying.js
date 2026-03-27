@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
 
 const toYMD = (d) => {
@@ -10,6 +11,7 @@ const toYMD = (d) => {
 const today = toYMD(new Date());
 
 const Drying = () => {
+  const { t } = useLang(); 
   const [patioLots, setPatioLots] = useState([]);
   const [selectedLots, setSelectedLots] = useState([]);
   const [lotVolumes, setLotVolumes] = useState({});
@@ -183,17 +185,17 @@ const Drying = () => {
 
   return (
     <div className="form-container">
-      <h2>Drying</h2>
+      <h2>{t("dryingTitle")}</h2>
       <form onSubmit={handleSubmit}>
-        <h3>Seleziona lotti dal Patio</h3>
+        <h3>{t("selectPatioLots")}</h3>
         <table>
           <thead>
             <tr>
               <th></th>
-              <th>Data</th>
-              <th>Volume</th>
-              <th>Patio</th>
-              <th>Tipo</th>
+              <th>{t("date")}</th>
+              <th>{t("volume")}</th>
+              <th>{t("patio")}</th>
+              <th>{t("type")}</th>
             </tr>
           </thead>
           <tbody>
@@ -215,7 +217,7 @@ const Drying = () => {
             {patioLots.length === 0 && (
               <tr>
                 <td colSpan={5} className="empty-state">
-                  Nessun lotto disponibile
+                  {t("noLotsAvailable")}
                 </td>
               </tr>
             )}
@@ -254,7 +256,7 @@ const Drying = () => {
             })}
 
             <div className="total-volume-box">
-              Volume totale selezionato:{" "}
+              {t("totalVolumeSelected")}:{" "}
               <strong>
                 {calculateTotalPartialVolume().toLocaleString("it-IT")} L
               </strong>
@@ -263,7 +265,7 @@ const Drying = () => {
         )}
 
         <label>
-          Dryer:
+          {t("dryer")}:
           <select
             name="dryer"
             value={form.dryer}
@@ -282,7 +284,7 @@ const Drying = () => {
         </label>
 
         <label>
-          Data:
+          {t("date")}:
           <input
             type="date"
             name="date"
@@ -308,7 +310,7 @@ const Drying = () => {
         </label>
 
         <label>
-          Ora:
+          {t("timeIn")}:
           <input
             type="time"
             name="timeIn"
@@ -331,7 +333,7 @@ const Drying = () => {
               selectedLots.length === 0
             }
           >
-            Conferma
+            {t("confirm")}
           </button>
           <button
             type="button"
@@ -339,7 +341,7 @@ const Drying = () => {
             onClick={handleCancel}
             disabled={!form.dryer || !form.date || !form.timeIn || selectedLots.length === 0 || !!validateDate(form.date)}
           >
-            Annulla
+            {t("cancel")}
           </button>
         </div>
       </form>

@@ -18,15 +18,18 @@ function Navbar() {
     setDropdownOpen(!isDropdownOpen);
   };
 
-  const handleLogout = async () => {
-    try {      
-      await axios.post('http://localhost:5000/logout', {}, { withCredentials: true });
-      setUser(null);         
-      navigate('/login', { state: { loggedOut: true } });      
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+ const handleLogout = async () => {
+  try {
+    await axios.post('http://localhost:5000/logout', {}, { withCredentials: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    // sessione già scaduta — va bene lo stesso
+  } finally {
+    // ← esegue sempre, errore o no
+    setUser(null);
+    navigate('/login');
+  }
+};
 
 
   return (

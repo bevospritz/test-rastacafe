@@ -709,7 +709,7 @@ app.get("/api/restcard", async (req, res) => {
     const query = `
       SELECT 
         r.id,
-        r.dateIn AS date,
+        r.date,
         r.tulha AS name,
         r.volume,
         GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
@@ -1281,7 +1281,7 @@ app.get("/api/rest", async (req, res) => {
     const query = `
       SELECT
         r.id,
-        r.dateIn,
+        r.date,
         r.tulha AS name,
         r.volume,
         GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
@@ -1293,7 +1293,7 @@ app.get("/api/rest", async (req, res) => {
       LEFT JOIN patio_prevnlot pp ON p.id = pp.patio_id
       LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
       GROUP BY r.id
-      ORDER BY r.dateIn DESC;
+      ORDER BY r.date DESC;
     `;
 
     const [results] = await connection.query(query);
@@ -1313,9 +1313,9 @@ app.get("/api/rest", async (req, res) => {
 
 //Endpoint per il post dei dati in rest (tulha)
 app.post("/api/rest", async (req, res) => {
-  const { tulha, volume, dateIn, timeIn, lots } = req.body;
+  const { tulha, volume, date, timeIn, lots } = req.body;
 
-  if (!tulha || !volume || !dateIn || !timeIn || !Array.isArray(lots)) {
+  if (!tulha || !volume || !date || !timeIn || !Array.isArray(lots)) {
     return res.status(400).json({ message: "Dati incompleti" });
   }
 
@@ -1334,9 +1334,9 @@ app.post("/api/rest", async (req, res) => {
     // inserimento REST
     const [ins] = await connection.query(
       `INSERT INTO rest 
-       (tulha, volume, dateIn, timeIn, rest_nLot)
+       (tulha, volume, date, timeIn, rest_nLot)
        VALUES (?, ?, ?, ?, ?)`,
-      [tulha, volume, dateIn, timeIn, newNlot],
+      [tulha, volume, date, timeIn, newNlot],
     );
 
     const restId = ins.insertId;
@@ -1447,7 +1447,7 @@ app.get("/api/restforcleaning", async (req, res) => {
       SELECT 
         r.id AS rest_id,
         r.tulha,
-        r.dateIn,
+        r.date,
         r.volume AS rest_volume,
         r.rest_nLot,
         p.date AS patio_date,
@@ -1463,10 +1463,10 @@ app.get("/api/restforcleaning", async (req, res) => {
       LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
       LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nlot
       WHERE r.status IN ('active', 'split')
-      GROUP BY r.id, r.tulha, r.dateIn, r.volume, r.rest_nLot,
+      GROUP BY r.id, r.tulha, r.date, r.volume, r.rest_nLot,
                p.date, p.type, p.volume,
                d.date, d.volume
-      ORDER BY r.tulha, r.dateIn ASC;
+      ORDER BY r.tulha, r.date ASC;
     `;
 
     const [rows] = await connection.query(query);
@@ -1498,7 +1498,7 @@ app.get("/api/restforcleaning", async (req, res) => {
         grouped[row.tulha].lots.push({
           rest_id: row.rest_id,
           rest_nLot: row.rest_nLot,
-          dateIn: row.dateIn,
+          date: row.date,
           volume: row.rest_volume,
           date: row.patio_date || row.dryer_date,
           type: row.patio_type || row.dryer_type,
@@ -1592,10 +1592,10 @@ app.post("/api/cleaning", async (req, res) => {
 
       // Recupera i lotti della tulha ordinati FIFO (più vecchio prima)
       const [tulhaLots] = await connection.query(
-        `SELECT id, rest_nLot, dateIn, timeIn, volume, partial_volume, status
+        `SELECT id, rest_nLot, date, timeIn, volume, partial_volume, status
          FROM rest
          WHERE id IN (?) AND tulha = ?
-         ORDER BY dateIn ASC, timeIn ASC`,
+         ORDER BY date ASC, timeIn ASC`,
         [lot.rest_ids, lot.tulha],
       );
 
@@ -1960,7 +1960,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         P: "SELECT patio_nLot AS nLot, date, name, volume, type, status FROM patio WHERE patio_nLot = ?",
         D: "SELECT dryer_nLot AS nLot, date, dryer AS name, volume, status FROM dryer WHERE dryer_nLot = ?",
         F: "SELECT fermentation_nLot AS nLot, date, volume, method, type FROM fermentation WHERE fermentation_nLot = ?",
-        R: "SELECT rest_nLot AS nLot, dateIn AS date, tulha AS name, volume, status FROM rest WHERE rest_nLot = ?",
+        R: "SELECT rest_nLot AS nLot, date, tulha AS name, volume, status FROM rest WHERE rest_nLot = ?",
         C: "SELECT cleaning_nLot AS nLot, date, volume, weight, bags, deposit FROM cleaning WHERE cleaning_nLot = ?",
         S: `SELECT selling_nLot AS nLot, date, bags_sold AS bags, price_per_bag, currency 
     FROM selling WHERE selling_nLot = ?`,
