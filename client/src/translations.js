@@ -4,6 +4,12 @@
 
 const translations = {
   IT: {
+    //Online/Offline
+    offlineBanner:
+      "Sei offline. I dati verranno salvati localmente e sincronizzati quando torni online.",
+    savedOffline:
+      "Dati salvati offline. Verranno sincronizzati quando torni online.",
+
     // Dashboard
     dashboard: "Dashboard",
     dashboardSubtitle: "Analisi produzione per appezzamento",
@@ -69,6 +75,12 @@ const translations = {
     vassoura: "Vassoura",
     mechanical: "Meccanica",
     manual: "Manuale",
+
+    // Newlot alert
+    lotCreated: "Lotto creato con successo!",
+    invalidVolume: "Il volume deve essere un numero valido maggiore di zero.",
+    confirmData: "Confermi i seguenti dati?",
+    operationCancelled: "Operazione annullata.",
 
     // WashDevide
     washDivideTitle: "Wash & Divide",
@@ -169,14 +181,14 @@ const translations = {
     bagsLost: "Sacchi persi",
     residueAvailable: "Residuo disponibile",
     remainingBags: "Sacchi restanti",
-    remainingWeight: "Peso restante",       
-    quantity: "Quantità",    
-    saleData: "Dati vendita", 
-    certBonus: "Bonus {{cert}} per sacco ({{currency}})",    
-    notesPlaceholder: "Es. Solo peneira > 15",    
+    remainingWeight: "Peso restante",
+    quantity: "Quantità",
+    saleData: "Dati vendita",
+    certBonus: "Bonus {{cert}} per sacco ({{currency}})",
+    notesPlaceholder: "Es. Solo peneira > 15",
     bagsTimesPrice: "{{bags}} sacchi × {{price}} {{currency}}",
     certBonusRow: "Bonus {{cert}} ({{bags}} × {{bonus}})",
-    residualBags: "Sacchi residui disponibili",    
+    residualBags: "Sacchi residui disponibili",
     lossNotes: "Es. Sacco danneggiato durante il trasporto",
 
     // Sellin alerts
@@ -280,6 +292,12 @@ const translations = {
   },
 
   PT: {
+    //Online/Offline
+    offlineBanner:
+      "Você está offline. Os dados serão salvos localmente e sincronizados quando voltar online.",
+    savedOffline:
+      "Dados salvos offline. Serão sincronizados quando voltar online.",
+
     // Dashboard
     dashboard: "Dashboard",
     dashboardSubtitle: "Análise produção por talhão",
@@ -345,6 +363,12 @@ const translations = {
     vassoura: "Vassoura",
     mechanical: "Mecânica",
     manual: "Manual",
+
+    // Newlot alert
+    lotCreated: "Lote criado com sucesso!",
+    invalidVolume: "O volume deve ser um número válido maior que zero.",
+    confirmData: "Confirma os seguintes dados?",
+    operationCancelled: "Operação cancelada.",
 
     // WashDevide
     washDivideTitle: "Lavagem & Separação",
@@ -449,13 +473,13 @@ const translations = {
     residueAvailable: "Resíduo disponível",
     remainingBags: "Sacas restantes",
     remainingWeight: "Peso restante",
-    quantity: "Quantidade",    
-    saleData: "Dados da venda", 
-    certBonus: "Bônus {{cert}} por saca ({{currency}})",    
-    notesPlaceholder: "Ex. Apenas peneira > 15",    
+    quantity: "Quantidade",
+    saleData: "Dados da venda",
+    certBonus: "Bônus {{cert}} por saca ({{currency}})",
+    notesPlaceholder: "Ex. Apenas peneira > 15",
     bagsTimesPrice: "{{bags}} sacas × {{price}} {{currency}}",
     certBonusRow: "Bônus {{cert}} ({{bags}} × {{bonus}})",
-    residualBags: "Sacas residuais disponíveis",    
+    residualBags: "Sacas residuais disponíveis",
     lossNotes: "Ex. Saco danificado durante o transporte",
 
     // Sellin alerts

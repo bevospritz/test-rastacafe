@@ -1,59 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useLang } from "../../../LanguageContext";
+import { useOffline } from "../../../OfflineContext";
+import useOfflineRequest from "../../../hooks/useOfflineRequest";
 import "../Traceability.css";
+
+const BASE_URL = "http://localhost:5000";
 
 const NewLot = () => {
   const { t } = useLang();
+  const { isOnline } = useOffline();
+  const { get, post } = useOfflineRequest();
   const [form, setForm] = useState({
-    plot: "",
-    volume: "",
-    date: "",
-    method: "",
-    type: "",
+    plot: "", volume: "", date: "", method: "", type: "",
   });
   const [plots, setPlots] = useState([]);
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/plots")
-      .then((response) => setPlots(response.data))
-      .catch((error) => console.error("Errore nel caricamento da plots:", error));
+    get(`${BASE_URL}/api/plots`)
+      .then((data) => setPlots(data))
+      .catch((err) => console.error("Errore caricamento plots:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isNaN(form.volume) || Number(form.volume) <= 0) {
-      alert("Il volume deve essere un numero valido maggiore di zero.");
+      alert(t("invalidVolume"));
       return;
     }
 
     const isConfirmed = window.confirm(
-      `Confermi i seguenti dati?\n\nTalhão: ${form.plot}\nVolume: ${form.volume}\nData: ${form.date}\nMetodo: ${form.method}\nTipo: ${form.type}`
+      `${t("confirmData")}\n\n${t("plot")}: ${form.plot}\n${t("volume")}: ${form.volume}\n${t("date")}: ${form.date}\n${t("method")}: ${form.method}\n${t("type")}: ${form.type}`
     );
 
-    if (isConfirmed) {
-      axios
-        .post("http://localhost:5000/api/newlot", form)
-        .then((response) => {
-          console.log("Form confermato:", response.data);
-          alert("Lotto creato con successo!");
-          navigate("/dashboard/traceability/manage-lot");
-        })
-        .catch((error) => {
-          console.error("Errore nel caricamento dei dati:", error);
-          alert("Errore nel caricamento dei dati");
-        });
-    } else {
-      alert("Operazione annullata.");
+    if (!isConfirmed) { alert(t("operationCancelled")); return; }
+
+    try {
+      const res = await post(`${BASE_URL}/api/newlot`, form);
+      if (res.offline) {
+        alert(t("savedOffline"));
+      } else {
+        alert(t("lotCreated"));
+      }
+      navigate("/dashboard/traceability/manage-lot");
+    } catch (err) {
+      console.error("Errore:", err);
+      alert(t("error"));
     }
   };
 
@@ -62,44 +59,39 @@ const NewLot = () => {
   return (
     <div className="form-container">
       <h2>{t("newLot")}</h2>
+
+      {/* Banner offline */}
+      {!isOnline && (
+        <div style={{
+          padding: "8px 14px", marginBottom: "1rem",
+          backgroundColor: "#fff3e0", border: "1px solid #ffcc80",
+          borderRadius: "6px", fontSize: "0.85rem", color: "#e65100"
+        }}>
+          ⚠️ {t("offlineBanner")}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
-        <label>
-          {t("plot")}:
+        <label>{t("plot")}:
           <select name="plot" value={form.plot} onChange={handleChange} required>
             <option value="">{t("select")}</option>
             {plots.map((plot) => (
-              <option key={plot.id} value={plot.codename}>
-                {plot.codename}
-              </option>
+              <option key={plot.id} value={plot.codename}>{plot.codename}</option>
             ))}
           </select>
         </label>
 
-        <label>
-          {t("volume")}:
-          <input
-            type="number"
-            name="volume"
-            value={form.volume}
-            onChange={handleChange}
-            required
-            min={1}
-          />
+        <label>{t("volume")}:
+          <input type="number" name="volume" value={form.volume}
+            onChange={handleChange} required min={1} />
         </label>
 
-        <label>
-          {t("date")}:
-          <input
-            type="date"
-            name="date"
-            value={form.date}
-            onChange={handleChange}
-            required
-          />
+        <label>{t("date")}:
+          <input type="date" name="date" value={form.date}
+            onChange={handleChange} required />
         </label>
 
-        <label>
-          {t("method")}:
+        <label>{t("method")}:
           <select name="method" value={form.method} onChange={handleChange} required>
             <option value="">{t("select")}</option>
             <option value="Mechanical">{t("mechanical")}</option>
@@ -107,8 +99,7 @@ const NewLot = () => {
           </select>
         </label>
 
-        <label>
-          {t("type")}:
+        <label>{t("type")}:
           <select name="type" value={form.type} onChange={handleChange} required>
             <option value="">{t("select")}</option>
             <option value="Natural">{t("natural")}</option>
