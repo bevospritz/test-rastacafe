@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
 
 const toYMD = (d) => {
@@ -10,6 +11,7 @@ const toYMD = (d) => {
 const today = toYMD(new Date());
 
 const Cleaning = () => {
+  const { t } = useLang();
   const [tulhas, setTulhas] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [selectedTulhas, setSelectedTulhas] = useState([]);
@@ -188,12 +190,12 @@ const Cleaning = () => {
 
   return (
     <div className="form-container">
-      <h2>Cleaning</h2>
+      <h2>{t("cleaningTitle")}</h2>
       <form onSubmit={handleSubmit}>
-        <h3>Seleziona Tulhe</h3>
+        <h3>{t("selectTulhas")}</h3>
         {tulhas.length === 0 ? (
           <p className="empty-state">
-            Nessuna tulha disponibile per il cleaning
+            {t("noDepoForCleaning")}
           </p>
         ) : (
           <div className="tulha-grid">
@@ -221,13 +223,13 @@ const Cleaning = () => {
                     />
                     <div>
                       <div className="tulha-card-title">
-                        Tulha {tulha.tulha}
+                        {t("tulha")} {tulha.tulha}
                       </div>
                       <div className="tulha-card-volume">
-                        {tulha.totalVolume.toLocaleString("it-IT")} L totali
+                        {tulha.totalVolume.toLocaleString("it-IT")} {t("totalLiters")}
                         {" · "}
-                        {tulha.lots.length} lott
-                        {tulha.lots.length > 1 ? "i" : "o"}
+                        {tulha.lots.length} lote
+                        {tulha.lots.length > 1 ? "s" : ""}
                       </div>
                     </div>
                   </div>
@@ -271,7 +273,7 @@ const Cleaning = () => {
                   {isSelected && (
                     <div className="slider-container">
                       <div className="slider-label">
-                        <strong>Volume al cleaning:</strong>{" "}
+                        <strong>{t("volumeToClean")}:</strong>{" "}
                         {tulhaVolumes[tulha.tulha]}%{" "}
                         <span className="slider-value">
                           ({getUsedVolume(tulha).toLocaleString("it-IT")} L su{" "}
@@ -300,21 +302,21 @@ const Cleaning = () => {
 
         {selectedTulhas.length > 0 && (
           <div className="total-volume-box">
-            Volume totale al cleaning:{" "}
+            {t("totalVolumeToClean")}:
             <strong>{totalVolume.toLocaleString("it-IT")} L</strong>
             {" · "}
             <span className="total-volume-muted">
               {selectedTulhas.length} tulha
-              {selectedTulhas.length > 1 ? "s" : ""} selezionata
+              {selectedTulhas.length > 1 ? "s" : ""} {t("selected")}
               {selectedTulhas.length > 1 ? "s" : ""}
             </span>
           </div>
         )}
 
-        <h3>Dati Cleaning</h3>
+        <h3>{t("cleaningData")}</h3>
 
         <label>
-          Data:
+          {t("date")}:
           <input
             type="date"
             name="date"
@@ -340,7 +342,7 @@ const Cleaning = () => {
         </label>
 
         <label>
-          Peso pulito (kg):
+          {t("cleanedWeight")}:
           <input
             type="number"
             min="0"
@@ -354,7 +356,7 @@ const Cleaning = () => {
         </label>
 
         <label>
-          N° Sacchi (60kg):
+          {t("bags")}:
           <input
             type="number"
             min="0"
@@ -367,7 +369,7 @@ const Cleaning = () => {
         </label>
 
         <label>
-          Umidità (%):
+          {t("humidity")}:
           <input
             type="number"
             min="0"
@@ -382,7 +384,7 @@ const Cleaning = () => {
         </label>
 
         <label>
-          Difetti / Cata (%):
+          {t("defects")}:
           <input
             type="number"
             min="0"
@@ -396,7 +398,7 @@ const Cleaning = () => {
         </label>
 
         <label>
-          Deposito di destinazione:
+          {t("destination")}:
           <select
             value={form.deposit}
             onChange={(e) =>
@@ -404,7 +406,7 @@ const Cleaning = () => {
             }
             required
           >
-            <option value="">— Nessun deposito (vendita diretta) —</option>
+            <option value="">— {t("noDeposit")} —</option>
             {deposits.map((d) => (
               <option key={d.id} value={d.name}>
                 {d.name}
@@ -419,14 +421,14 @@ const Cleaning = () => {
             className="action-button"
             disabled={!isFormValid || isSubmitting || !!validateDate(form.date)}
           >
-            {isSubmitting ? "Salvataggio..." : "Conferma"}
+            {isSubmitting ? "Salvataggio..." : t("confirm")}
           </button>
           <button
             type="button"
             className="action-button cancel"
             onClick={handleCancel}
           >
-            Annulla
+            {t("cancel")}
           </button>
         </div>
       </form>

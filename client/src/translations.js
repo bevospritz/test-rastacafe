@@ -1,8 +1,6 @@
 // import { useLang } from "../../LanguageContext";
-// const { t } = useLang(); 
+// const { t } = useLang();
 // {t("dashboard")}
-
-
 
 const translations = {
   IT: {
@@ -93,7 +91,7 @@ const translations = {
     selectPatio: "Seleziona",
     additionalProcessingCD: "Lavorazioni aggiuntive sul CD",
     noDespolpador: "Senza despolpador il Mature+Green sarà classificato come",
-    totalVolume: "Volume totale",    
+    totalVolume: "Volume totale",
     confirmSend: "Conferma",
 
     // Fermentation
@@ -110,7 +108,6 @@ const translations = {
     rotative: "Rotativa",
     bigBag: "Big Bag",
     lotsFermenting: "Lotti in fermentazione",
-    
 
     // Drying
     dryingTitle: "Essiccazione",
@@ -122,13 +119,20 @@ const translations = {
     restingTitle: "Riposo in tulha",
 
     // Cleaning
-    cleaningTitle: "Pulizia",
+    cleaningTitle: "Beneficio",
+    selectTulha: "Seleziona Tulha",
+    totalLiters: "Litri totali",
+    volumeToClean: "Volume da beneficiare (L)",
+    totalVolumeToClean: "Volume totale da beneficiare",
+    cleaningData: "Dati del beneficio",
+    noDepoForCleaning: "Nessuna tulha disponibile per il beneficio",
     cleanedWeight: "Peso pulito (kg)",
     bags: "N° Sacchi (60kg)",
     humidity: "Umidità (%)",
     defects: "Difetti / Cata (%)",
     destination: "Deposito di destinazione",
     noDeposit: "Nessun deposito (vendita diretta)",
+    selected: "selezionata",
 
     // Stocking
     stockingTitle: "Stoccaggio",
@@ -163,6 +167,32 @@ const translations = {
     total: "Totale",
     registerLoss: "Registra Perdita",
     bagsLost: "Sacchi persi",
+    residueAvailable: "Residuo disponibile",
+    remainingBags: "Sacchi restanti",
+    remainingWeight: "Peso restante",       
+    quantity: "Quantità",    
+    saleData: "Dati vendita", 
+    certBonus: "Bonus {{cert}} per sacco ({{currency}})",    
+    notesPlaceholder: "Es. Solo peneira > 15",    
+    bagsTimesPrice: "{{bags}} sacchi × {{price}} {{currency}}",
+    certBonusRow: "Bonus {{cert}} ({{bags}} × {{bonus}})",
+    residualBags: "Sacchi residui disponibili",    
+    lossNotes: "Es. Sacco danneggiato durante il trasporto",
+
+    // Sellin alerts
+    lotDataNotComplited: "I dati del lotto non sono completi.",
+    fillBeforeSelling: "Compila tutti i campi prima di vendere.",
+    selectBuyer: "Seleziona un acquirente valido.",
+    invalidBagsToSell: "Inserisci un numero valido di sacchi da vendere.",
+    insufficientBags:
+      "Sacchi insufficienti: disponibili {{available}}, inseriti {{bags}}.",
+    saleRegistered:
+      "Vendita registrata!\nLotto: {{lot}}\nTotale: {{currency}} {{total}}",
+    savingError: "Errore durante il salvataggio.",
+    loseMoreThanAvailable:
+      "Non puoi registrare una perdita maggiore dei sacchi disponibili {{available}}.",
+    lossRegistered:
+      "Perdita registrata!\nLotto: {{lossLot.cleaning_nLot}}\nSacchi persi: {{bagsLost}}",
 
     // Status
     available: "Disponibile",
@@ -347,7 +377,7 @@ const translations = {
     endDate: "Data de Término",
     startTime: "Hora de Início",
     endTime: "Hora de Término",
-    fermentationType: "Tipo de Fermentação",    
+    fermentationType: "Tipo de Fermentação",
     barrel: "Barris",
     tank: "Tanques",
     rotative: "Rotativo",
@@ -365,12 +395,19 @@ const translations = {
 
     // Cleaning
     cleaningTitle: "Beneficiamento",
+    selectTulha: "Selecione Tulha",
+    totalLiters: "Litros totais",
+    volumeToClean: "Volume a beneficiar (L)",
+    totalVolumeToClean: "Volume total a beneficiar",
+    cleaningData: "Dados do beneficiamento",
+    noDepoForCleaning: "Nenhuma tulha disponivel para o beneficio",
     cleanedWeight: "Peso beneficiado (kg)",
     bags: "N° Sacas (60kg)",
     humidity: "Umidade (%)",
     defects: "Defeitos / Cata (%)",
     destination: "Depósito de destino",
     noDeposit: "Sem depósito (venda direta)",
+    selected: "selecionada",
 
     // Stocking
     stockingTitle: "Estocagem",
@@ -385,6 +422,10 @@ const translations = {
     directSale: "Venda direta",
     edit: "Editar",
     save: "Salvar",
+    depositWeight: "Peso no depósito",
+    depositHumidity: "Umidade no depósito (%)",
+    depositCata: "Cata no depósito (%)",
+    depositPeneira: "Peneira no depósito (%)",
 
     // Selling
     sellingTitle: "Venda",
@@ -405,6 +446,32 @@ const translations = {
     total: "Total",
     registerLoss: "Registrar Perda",
     bagsLost: "Sacas perdidas",
+    residueAvailable: "Resíduo disponível",
+    remainingBags: "Sacas restantes",
+    remainingWeight: "Peso restante",
+    quantity: "Quantidade",    
+    saleData: "Dados da venda", 
+    certBonus: "Bônus {{cert}} por saca ({{currency}})",    
+    notesPlaceholder: "Ex. Apenas peneira > 15",    
+    bagsTimesPrice: "{{bags}} sacas × {{price}} {{currency}}",
+    certBonusRow: "Bônus {{cert}} ({{bags}} × {{bonus}})",
+    residualBags: "Sacas residuais disponíveis",    
+    lossNotes: "Ex. Saco danificado durante o transporte",
+
+    // Sellin alerts
+    lotDataNotComplited: "Os dados do lote não estão completos.",
+    fillBeforeSelling: "Compila todos os campos antes de vender.",
+    selectBuyer: "Selecione um comprador válido.",
+    invalidBagsToSell: "Insira um número válido de sacas para vender.",
+    insufficientBags:
+      "Sacas insuficientes: disponíveis {{available}}, inseridas {{bags}}.",
+    saleRegistered:
+      "Venda registrada!\nLote: {{lot}}\nTotal: {{currency}} {{total}}",
+    savingError: "Erro ao salvar.",
+    loseMoreThanAvailable:
+      "Você não pode registrar uma perda maior que as sacas disponíveis {{available}}.",
+    lossRegistered:
+      "Perda registrada!\nLote: {{lossLot.cleaning_nLot}}\nSacas perdidas: {{bagsLost}}",
 
     // Status
     available: "Disponível",

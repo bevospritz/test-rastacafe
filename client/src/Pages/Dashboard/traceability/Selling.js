@@ -2,11 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Modal from "react-modal";
+import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
 
 Modal.setAppElement("#root");
 
-const toYMD = (d) => { if (!d) return null; return new Date(d).toISOString().split("T")[0]; };
+const toYMD = (d) => {
+  if (!d) return null;
+  return new Date(d).toISOString().split("T")[0];
+};
 const today = toYMD(new Date());
 
 const CERTIFICATIONS = ["Rainforest Alliance", "UTZ"];
@@ -21,20 +25,19 @@ const REQUIRED_FIELDS = [
 const isLotComplete = (lot) =>
   REQUIRED_FIELDS.every((f) => lot[f] != null && lot[f] !== "");
 
-// ← FUORI dal componente per evitare il bug del focus
 const StatusBadge = ({ lot }) => {
   if (lot.status === "partial")
-    return <span className="badge badge-direct">Parziale</span>;
+    return <span className="badge badge-direct">Parcial</span>;
   if (lot.status === "sold")
     return (
       <span
         className="badge"
         style={{ backgroundColor: "#e8f5e9", color: "#2e7d32" }}
       >
-        Venduto
+        Vendido
       </span>
     );
-  return <span className="badge badge-deposit">Disponibile</span>;
+  return <span className="badge badge-deposit">Disponivel</span>;
 };
 
 const DetailRow = ({ label, value }) => (
@@ -47,6 +50,7 @@ const DetailRow = ({ label, value }) => (
 );
 
 const Selling = () => {
+  const { t } = useLang();
   const [lots, setLots] = useState([]);
   const [buyers, setBuyers] = useState([]);
   const [detailLot, setDetailLot] = useState(null);
@@ -122,16 +126,10 @@ const Selling = () => {
 
   const handleOpenSell = (lot) => {
     if (!isLotComplete(lot)) {
-      alert(
-        `Il lotto ${lot.cleaning_nLot} non è completo.\n\nPrima di procedere alla vendita compila in Stocking:\n` +
-          REQUIRED_FIELDS.filter((f) => lot[f] == null || lot[f] === "")
-            .map((f) => `• ${f}`)
-            .join("\n"),
-      );
+      alert(t("lotDataNotComplited") + "\n\n" + t("fillBeforeSelling"));
       return;
     }
 
-    
     setSellLot(lot);
     setBagsSold(getAvailableBags(lot).toString());
     setSellForm({
@@ -166,17 +164,15 @@ const Selling = () => {
     const available = getAvailableBags(sellLot);
 
     if (!sellForm.buyer_id) {
-      alert("Seleziona un acquirente.");
+      alert(t("selectBuyer"));
       return;
     }
     if (bags <= 0) {
-      alert("Inserisci un numero di sacchi valido.");
+      alert(t("invalidBagsToSell"));
       return;
     }
     if (bags > available) {
-      alert(
-        `Sacchi insufficienti: disponibili ${available}, inseriti ${bags}.`,
-      );
+      alert(t("insufficientBags", { available, bags }));
       return;
     }
 
@@ -211,14 +207,18 @@ const Selling = () => {
         payload,
       );
       alert(
-        `Vendita registrata!\nLotto: ${res.data.selling_nLot}\nTotale: ${sellForm.currency} ${grandTotal.toFixed(2)}`,
+        t("saleRegistered", {
+          lot: res.data.selling_nLot,
+          currency: sellForm.currency,
+          total: grandTotal.toFixed(2),
+        }),
       );
       setIsSellOpen(false);
       fetchLots();
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore vendita:", err);
-      alert("Errore durante il salvataggio.");
+      alert(t("savingError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -232,13 +232,11 @@ const Selling = () => {
     const available = getAvailableBags(lossLot);
 
     if (bagsLost <= 0) {
-      alert("Inserisci un numero di sacchi valido.");
+      alert(t("invalidBagsToSell"));
       return;
     }
     if (bagsLost > available) {
-      alert(
-        `Non puoi perdere più sacchi di quelli disponibili (${available}).`,
-      );
+      alert(t("loseMoreThanAvailable", { available }));
       return;
     }
 
@@ -250,14 +248,12 @@ const Selling = () => {
         date: lossForm.date,
         notes: lossForm.notes || null,
       });
-      alert(
-        `Perdita di ${bagsLost} sacchi registrata per il lotto ${lossLot.cleaning_nLot}.`,
-      );
+      alert(t("lossRegistered", { lossLot, bagsLost }));
       setIsLossOpen(false);
       fetchLots();
     } catch (err) {
       console.error("Errore registrazione perdita:", err);
-      alert("Errore durante il salvataggio.");
+      alert(t("savingError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -267,24 +263,22 @@ const Selling = () => {
 
   return (
     <div className="form-container" style={{ maxWidth: "1000px" }}>
-      <h2>Selling</h2>
-      <p className="page-subtitle">
-        Seleziona un lotto per visualizzare i dettagli o avviare una vendita.
-      </p>
+      <h2>{t("sellingTitle")}</h2>
+      <p className="page-subtitle">{t("sellingSubtitle")}</p>
 
       {lots.length === 0 ? (
-        <p className="empty-state">Nessun lotto disponibile per la vendita.</p>
+        <p className="empty-state">{t("noLotsAvailable")}</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>Data</th>
-              <th>Lotto</th>
-              <th>Tipo</th>
-              <th>Bags</th>
-              <th>Deposito</th>
-              <th>Status</th>
-              <th>Azioni</th>
+              <th>{t("data")}</th>
+              <th>{t("lot")}</th>
+              <th>{t("type")}</th>
+              <th>{t("bags")}</th>
+              <th>{t("deposit")}</th>
+              <th>{t("status")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -319,7 +313,7 @@ const Selling = () => {
                       }}
                       onClick={() => handleOpenDetail(lot)}
                     >
-                      Dettagli
+                      {t("details")}
                     </button>
                     <button
                       className="action-button save"
@@ -339,7 +333,7 @@ const Selling = () => {
                           : ""
                       }
                     >
-                      {complete ? "Vendi" : "⚠️ Vendi"}
+                      {complete ? t("sell") : ` ${t("⚠️ sell")}`}
                     </button>
                     {/* Bottone perdita — visibile solo se ci sono sacchi residui */}
                     {hasResidual && (
@@ -354,7 +348,7 @@ const Selling = () => {
                         }}
                         onClick={() => handleOpenLoss(lot)}
                       >
-                        📦 Perdita
+                        📦 {t("loss")}
                       </button>
                     )}
                   </td>
@@ -376,13 +370,15 @@ const Selling = () => {
         {detailLot && (
           <>
             <div className="modal-header">
-              <h2>{detailLot.cleaning_nLot} — Dettagli</h2>
+              <h2>
+                {detailLot.cleaning_nLot} — {t("details")}
+              </h2>
             </div>
             <div className="modal-body">
-              <div className="info-section-title">Dati fattoria</div>
-              <DetailRow label="Data" value={formatDate(detailLot.date)} />
+              <div className="info-section-title">{t("farmData")}</div>
+              <DetailRow label={t("date")} value={formatDate(detailLot.date)} />
               <DetailRow
-                label="Volume"
+                label={t("volume")}
                 value={
                   detailLot.volume
                     ? `${detailLot.volume.toLocaleString("it-IT")} L`
@@ -390,26 +386,26 @@ const Selling = () => {
                 }
               />
               <DetailRow
-                label="Peso"
+                label={t("weight")}
                 value={
                   detailLot.weight
                     ? `${detailLot.weight.toLocaleString("it-IT")} kg`
                     : null
                 }
               />
-              <DetailRow label="Bags" value={detailLot.bags} />
+              <DetailRow label={t("bags")} value={detailLot.bags} />
               <DetailRow
-                label="Umidità"
+                label={t("humidity")}
                 value={
                   detailLot.umidity != null ? `${detailLot.umidity}%` : null
                 }
               />
               <DetailRow
-                label="Cata"
+                label={t("defects")}
                 value={detailLot.cata != null ? `${detailLot.cata}%` : null}
               />
               <DetailRow
-                label="Peneira 17"
+                label={t("peneira")}
                 value={
                   detailLot.peneira != null ? `${detailLot.peneira}%` : null
                 }
@@ -419,10 +415,10 @@ const Selling = () => {
                 className="info-section-title"
                 style={{ marginTop: "0.75rem" }}
               >
-                Dati deposito
+                {t("depositData")}
               </div>
               <DetailRow
-                label="Peso deposito"
+                label={t("depositWeight")}
                 value={
                   detailLot.weight_deposit
                     ? `${detailLot.weight_deposit.toLocaleString("it-IT")} kg`
@@ -430,7 +426,7 @@ const Selling = () => {
                 }
               />
               <DetailRow
-                label="Umidità dep."
+                label={t("depositHumidity")}
                 value={
                   detailLot.umidity_deposit != null
                     ? `${detailLot.umidity_deposit}%`
@@ -438,7 +434,7 @@ const Selling = () => {
                 }
               />
               <DetailRow
-                label="Cata dep."
+                label={t("depositCata")}
                 value={
                   detailLot.cata_deposit != null
                     ? `${detailLot.cata_deposit}%`
@@ -446,16 +442,16 @@ const Selling = () => {
                 }
               />
               <DetailRow
-                label="Peneira 17 dep."
+                label={t("depositPeneira")}
                 value={
                   detailLot.peneira_deposit != null
                     ? `${detailLot.peneira_deposit}%`
                     : null
                 }
               />
-              <DetailRow label="Bebida" value={detailLot.bebida} />
+              <DetailRow label={t("bebida")} value={detailLot.bebida} />
               <DetailRow
-                label="Deposito"
+                label={t("deposit")}
                 value={detailLot.deposit || "Vendita diretta"}
               />
 
@@ -465,15 +461,15 @@ const Selling = () => {
                     className="info-section-title"
                     style={{ marginTop: "0.75rem" }}
                   >
-                    Residuo disponibile
+                    {t("residueAvailable")}
                   </div>
                   <DetailRow
-                    label="Bags rimanenti"
+                    label={t("remainingBags")}
                     value={detailLot.partial_bags}
                   />
                   {detailLot.partial_weight && (
                     <DetailRow
-                      label="Peso rimanente"
+                      label={t("remainingWeight")}
                       value={`${detailLot.partial_weight.toLocaleString("it-IT")} kg`}
                     />
                   )}
@@ -486,7 +482,7 @@ const Selling = () => {
                 style={{ width: "auto" }}
                 onClick={() => setIsDetailOpen(false)}
               >
-                Chiudi
+                {t("close")}
               </button>
               <button
                 className="action-button save"
@@ -497,7 +493,7 @@ const Selling = () => {
                 }}
                 disabled={detailLot.status === "sold"}
               >
-                Vendi
+                {t("sell")}
               </button>
             </div>
           </>
@@ -505,17 +501,20 @@ const Selling = () => {
       </Modal>
 
       {/* Modal vendita */}
+      {/* Modal vendita */}
       <Modal
         isOpen={isSellOpen}
         onRequestClose={() => setIsSellOpen(false)}
-        contentLabel="Registra Vendita"
+        contentLabel={t("sellingTitle")}
         className="modal-content"
         overlayClassName="modal"
       >
         {sellLot && (
           <>
             <div className="modal-header">
-              <h2>Vendita — {sellLot.cleaning_nLot}</h2>
+              <h2>
+                {t("saleTitle")} — {sellLot.cleaning_nLot}
+              </h2>
             </div>
             <div className="modal-body">
               <form onSubmit={handleSubmitSell}>
@@ -523,7 +522,8 @@ const Selling = () => {
                   className="total-volume-box"
                   style={{ marginBottom: "1rem" }}
                 >
-                  Disponibili: <strong>{getAvailableBags(sellLot)} bags</strong>
+                  {t("available")}:{" "}
+                  <strong>{getAvailableBags(sellLot)} bags</strong>
                   {getAvailableWeight(sellLot) && (
                     <>
                       {" "}
@@ -547,9 +547,9 @@ const Selling = () => {
                   )}
                 </div>
 
-                <div className="info-section-title">Quantità</div>
+                <div className="info-section-title">{t("quantity")}</div>
                 <label>
-                  N° Sacchi da vendere:
+                  {t("bagsToSell")}:
                   <input
                     type="number"
                     min="1"
@@ -560,9 +560,9 @@ const Selling = () => {
                   />
                 </label>
 
-                <div className="info-section-title">Dati vendita</div>
+                <div className="info-section-title">{t("saleData")}</div>
                 <label>
-                  Data:
+                  {t("date")}:
                   <input
                     type="date"
                     name="date"
@@ -575,14 +575,14 @@ const Selling = () => {
                 </label>
 
                 <label>
-                  Acquirente:
+                  {t("buyer")}:
                   <select
                     name="buyer_id"
                     value={sellForm.buyer_id}
                     onChange={handleSellFormChange}
                     required
                   >
-                    <option value="">Seleziona acquirente</option>
+                    <option value="">{t("selectBuyer")}</option>
                     {buyers.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
@@ -592,7 +592,7 @@ const Selling = () => {
                 </label>
 
                 <label>
-                  Prezzo per sacco:
+                  {t("pricePerBag")}:
                   <div style={{ display: "flex", gap: "0.75rem" }}>
                     <input
                       type="number"
@@ -616,7 +616,7 @@ const Selling = () => {
                   </div>
                 </label>
 
-                <div className="info-section-title">Certificazione</div>
+                <div className="info-section-title">{t("certification")}</div>
                 <div
                   style={{
                     display: "flex",
@@ -638,8 +638,8 @@ const Selling = () => {
                       value=""
                       checked={sellForm.certification === ""}
                       onChange={handleSellFormChange}
-                    />{" "}
-                    Nessuna
+                    />
+                    {t("noCertification")}
                   </label>
                   {CERTIFICATIONS.map((cert) => (
                     <label
@@ -657,7 +657,7 @@ const Selling = () => {
                         value={cert}
                         checked={sellForm.certification === cert}
                         onChange={handleSellFormChange}
-                      />{" "}
+                      />
                       {cert}
                     </label>
                   ))}
@@ -665,8 +665,11 @@ const Selling = () => {
 
                 {sellForm.certification && (
                   <label>
-                    Bonus {sellForm.certification} per sacco (
-                    {sellForm.currency}):
+                    {t("certBonus", {
+                      cert: sellForm.certification,
+                      currency: sellForm.currency,
+                    })}
+                    :
                     <input
                       type="number"
                       name="certification_bonus"
@@ -680,17 +683,16 @@ const Selling = () => {
                 )}
 
                 <label>
-                  Note:
+                  {t("notes")}:
                   <input
                     type="text"
                     name="notes"
                     value={sellForm.notes}
                     onChange={handleSellFormChange}
-                    placeholder="Es. Solo peneira > 15"
+                    placeholder={t("notesPlaceholder")}
                   />
                 </label>
 
-                {/* Totale */}
                 {bagsSold > 0 && sellForm.price_per_bag && (
                   <div
                     style={{
@@ -705,12 +707,15 @@ const Selling = () => {
                       className="info-section-title"
                       style={{ marginBottom: "0.5rem" }}
                     >
-                      Riepilogo
+                      {t("summary")}
                     </div>
                     <div className="info-row">
                       <span className="info-label">
-                        {bagsSold} sacchi × {sellForm.price_per_bag}{" "}
-                        {sellForm.currency}
+                        {t("bagsTimesPrice", {
+                          bags: bagsSold,
+                          price: sellForm.price_per_bag,
+                          currency: sellForm.currency,
+                        })}
                       </span>
                       <span className="info-value">
                         {sellForm.currency} {baseTotal.toFixed(2)}
@@ -719,8 +724,11 @@ const Selling = () => {
                     {sellForm.certification && sellForm.certification_bonus && (
                       <div className="info-row">
                         <span className="info-label">
-                          Bonus {sellForm.certification} ({bagsSold} ×{" "}
-                          {sellForm.certification_bonus})
+                          {t("certBonusRow", {
+                            cert: sellForm.certification,
+                            bags: bagsSold,
+                            bonus: sellForm.certification_bonus,
+                          })}
                         </span>
                         <span className="info-value text-success">
                           + {sellForm.currency} {bonusTotal.toFixed(2)}
@@ -739,7 +747,7 @@ const Selling = () => {
                         className="info-label"
                         style={{ fontWeight: "700" }}
                       >
-                        Totale
+                        {t("total")}
                       </span>
                       <span
                         className="info-value"
@@ -761,7 +769,7 @@ const Selling = () => {
                     style={{ width: "auto" }}
                     onClick={() => setIsSellOpen(false)}
                   >
-                    Annulla
+                    {t("cancel")}
                   </button>
                   <button
                     type="submit"
@@ -769,7 +777,7 @@ const Selling = () => {
                     style={{ width: "auto" }}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Salvataggio..." : "Conferma Vendita"}
+                    {isSubmitting ? t("saving") : t("confirmSale")}
                   </button>
                 </div>
               </form>
@@ -782,14 +790,16 @@ const Selling = () => {
       <Modal
         isOpen={isLossOpen}
         onRequestClose={() => setIsLossOpen(false)}
-        contentLabel="Registra Perdita"
+        contentLabel={t("registerLoss")}
         className="modal-content"
         overlayClassName="modal"
       >
         {lossLot && (
           <>
             <div className="modal-header">
-              <h2>📦 Registra Perdita — {lossLot.cleaning_nLot}</h2>
+              <h2>
+                📦 {t("registerLoss")} — {lossLot.cleaning_nLot}
+              </h2>
             </div>
             <div className="modal-body">
               <div
@@ -800,12 +810,12 @@ const Selling = () => {
                   borderColor: "#ffcc80",
                 }}
               >
-                Sacchi residui disponibili:{" "}
+                {t("residualBags")}:{" "}
                 <strong>{getAvailableBags(lossLot)}</strong>
               </div>
               <form onSubmit={handleSubmitLoss}>
                 <label>
-                  Data:
+                  {t("date")}:
                   <input
                     type="date"
                     value={lossForm.date}
@@ -816,7 +826,7 @@ const Selling = () => {
                   />
                 </label>
                 <label>
-                  Sacchi persi:
+                  {t("bagsLost")}:
                   <input
                     type="number"
                     min="1"
@@ -833,7 +843,7 @@ const Selling = () => {
                   />
                 </label>
                 <label>
-                  Note (opzionale):
+                  {t("notes")}:
                   <input
                     type="text"
                     value={lossForm.notes}
@@ -843,7 +853,7 @@ const Selling = () => {
                         notes: e.target.value,
                       }))
                     }
-                    placeholder="Es. Sacco danneggiato durante il trasporto"
+                    placeholder={t("lossNotes")}
                   />
                 </label>
                 <div className="modal-footer">
@@ -853,7 +863,7 @@ const Selling = () => {
                     style={{ width: "auto" }}
                     onClick={() => setIsLossOpen(false)}
                   >
-                    Annulla
+                    {t("cancel")}
                   </button>
                   <button
                     type="submit"
@@ -861,7 +871,7 @@ const Selling = () => {
                     style={{ width: "auto", backgroundColor: "#e65100" }}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Salvataggio..." : "Registra Perdita"}
+                    {isSubmitting ? t("saving") : t("registerLoss")}
                   </button>
                 </div>
               </form>

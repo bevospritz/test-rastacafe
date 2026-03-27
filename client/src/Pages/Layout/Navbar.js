@@ -8,8 +8,8 @@ import { useAuth } from "../../AuthContext";
 import { useLang } from "../../LanguageContext";
 
 
-function Navbar() {
-  const { lang, toggleLang } = useLang();
+function Navbar() {  
+  const { t, lang, toggleLang } = useLang();
   const { setUser } = useAuth();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
@@ -53,8 +53,8 @@ function Navbar() {
         <img src={userIcon} alt="User" className="user-icon" />
         {isDropdownOpen && (
           <div className="dropdown-menu">
-            <a href="/profile">Gestione del profilo</a>
-            <a href="#!" onClick={handleLogout}>Disconnessione</a>
+            <a href="/profile">{t("profile")}</a>
+            <a href="#!" onClick={handleLogout}>{t("logout")}</a>
           </div>
         )}
       </div>

@@ -14,12 +14,17 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem("lang", newLang);
   };
 
-  const t = (key) => {
-    const keys = key.split(".");
-    let val = translations[lang];
-    for (const k of keys) val = val?.[k];
-    return val || key;
-  };
+  const t = (key, params = {}) => {
+  const keys = key.split(".");
+  let val = translations[lang];
+  for (const k of keys) val = val?.[k];
+  if (!val) return key;
+  // sostituisce {{chiave}} con il valore corrispondente
+  return Object.entries(params).reduce(
+    (str, [k, v]) => str.replace(`{{${k}}}`, v),
+    val
+  );
+};
 
   return (
     <LanguageContext.Provider value={{ lang, toggleLang, t }}>
