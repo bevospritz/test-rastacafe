@@ -6,7 +6,6 @@ const DB_VERSION = 1;
 export const initDB = async () => {
   return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
-      // Coda operazioni pending da sincronizzare
       if (!db.objectStoreNames.contains("pendingOps")) {
         const store = db.createObjectStore("pendingOps", {
           keyPath: "id",
@@ -14,8 +13,6 @@ export const initDB = async () => {
         });
         store.createIndex("status", "status");
       }
-
-      // Cache dati esistenti per lettura offline
       if (!db.objectStoreNames.contains("cache")) {
         const cache = db.createObjectStore("cache", { keyPath: "key" });
         cache.createIndex("timestamp", "timestamp");
@@ -37,7 +34,9 @@ export const addPendingOp = async (op) => {
 
 export const getPendingOps = async () => {
   const db = await initDB();
-  return db.getAllFromIndex("pendingOps", "status", "pending");
+  const all = await db.getAllFromIndex("pendingOps", "status", "pending");
+  // Ordine cronologico — fondamentale per rispettare la filiera
+  return all.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 };
 
 export const markOpDone = async (id) => {
@@ -52,7 +51,7 @@ export const markOpFailed = async (id, error) => {
   if (op) await db.put("pendingOps", { ...op, status: "failed", error });
 };
 
-// ── Cache ──
+// ── Cache dati per lettura offline ──
 
 export const setCache = async (key, data) => {
   const db = await initDB();
@@ -67,4 +66,29 @@ export const getCache = async (key) => {
   const db = await initDB();
   const entry = await db.get("cache", key);
   return entry?.data || null;
+};
+
+// ── Lotti creati offline (pending nLot) ──
+
+// Salva nLot creato offline
+export const addOfflineNLot = async (nLot) => {
+  const db = await initDB();
+  await db.put("cache", {
+    key: `offline-nlot-${nLot}`,
+    data: { nLot, pending: true },
+    timestamp: new Date().toISOString(),
+  });
+};
+
+// Controlla se un nLot è ancora pending
+export const isNLotPending = async (nLot) => {
+  const db = await initDB();
+  const entry = await db.get("cache", `offline-nlot-${nLot}`);
+  return !!entry;
+};
+
+// Rimuovi nLot dalla lista pending dopo sync riuscita
+export const removeOfflineNLot = async (nLot) => {
+  const db = await initDB();
+  await db.delete("cache", `offline-nlot-${nLot}`);
 };

@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useLang } from "../../../LanguageContext";
 import { useOffline } from "../../../OfflineContext";
 import useOfflineRequest from "../../../hooks/useOfflineRequest";
+import { addOfflineNLot } from "../../../db/offlineDB";
+import PendingBanner from "../../../components/PendingBanner";
+import BackButton from "../../../components/BackButton";
 import "../Traceability.css";
 
 const BASE_URL = "http://localhost:5000";
@@ -37,12 +40,16 @@ const NewLot = () => {
     const isConfirmed = window.confirm(
       `${t("confirmData")}\n\n${t("plot")}: ${form.plot}\n${t("volume")}: ${form.volume}\n${t("date")}: ${form.date}\n${t("method")}: ${form.method}\n${t("type")}: ${form.type}`
     );
-
     if (!isConfirmed) { alert(t("operationCancelled")); return; }
 
     try {
-      const res = await post(`${BASE_URL}/api/newlot`, form);
+      // ID temporaneo per tracciare il lotto offline
+      const tempNLot = `TEMP-${form.plot}-${form.date}-${Date.now()}`;
+      const res = await post(`${BASE_URL}/api/newlot`, { ...form, tempNLot });
+
       if (res.offline) {
+        // Salva il tempNLot come pending — non potrà essere processato finché non sincronizzato
+        await addOfflineNLot(tempNLot);
         alert(t("savedOffline"));
       } else {
         alert(t("lotCreated"));
@@ -58,9 +65,12 @@ const NewLot = () => {
 
   return (
     <div className="form-container">
+    <BackButton to="/dashboard/traceability/manage-lot" />
       <h2>{t("newLot")}</h2>
 
-      {/* Banner offline */}
+      {/* Banner informativo — non bloccante in NewLot */}
+      <PendingBanner blockSubmit={false} />
+
       {!isOnline && (
         <div style={{
           padding: "8px 14px", marginBottom: "1rem",

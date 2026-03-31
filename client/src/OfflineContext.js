@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { getPendingOps, markOpDone, markOpFailed } from "./db/offlineDB";
+import { getPendingOps, markOpDone, markOpFailed, removeOfflineNLot } from "./db/offlineDB";
 
 const OfflineContext = createContext(null);
 
@@ -9,13 +9,11 @@ export const OfflineProvider = ({ children }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Aggiorna contatore pending
   const refreshPendingCount = useCallback(async () => {
     const ops = await getPendingOps();
     setPendingCount(ops.length);
   }, []);
 
-  // Sincronizza tutte le operazioni pending
   const sync = useCallback(async () => {
     if (isSyncing || !navigator.onLine) return;
     setIsSyncing(true);
@@ -29,35 +27,47 @@ export const OfflineProvider = ({ children }) => {
 
       for (const op of ops) {
         try {
-          await axios({
+          const res = await axios({
             method: op.method,
             url: op.url,
             data: op.data,
             withCredentials: true,
           });
+
           await markOpDone(op.id);
           successCount++;
+
+          // Se era un NewLot, rimuovi il nLot dalla lista pending
+          if (op.url.includes("/api/newlot") && op.method === "POST") {
+            const nLot = res.data?.newlot_nLot || op.data?.tempNLot;
+            if (nLot) await removeOfflineNLot(nLot);
+          }
         } catch (err) {
           await markOpFailed(op.id, err.message);
           failCount++;
+          // Se un'operazione fallisce interrompi — le successive potrebbero dipendere da questa
+          console.error(`Sync fallita per operazione ${op.id}:`, err.message);
+          break;
         }
       }
 
       await refreshPendingCount();
 
-      if (successCount > 0) {
-        alert(`✅ Sincronizzazione completata: ${successCount} operazioni inviate${failCount > 0 ? `, ${failCount} fallite` : ""}.`);
+      if (successCount > 0 || failCount > 0) {
+        alert(
+          `🔄 Sincronizzazione: ${successCount} operazion${successCount === 1 ? "e inviata" : "i inviate"}` +
+          (failCount > 0 ? `, ${failCount} fallita${failCount > 1 ? "e" : ""} — riprova più tardi.` : ".")
+        );
       }
     } finally {
       setIsSyncing(false);
     }
   }, [isSyncing, refreshPendingCount]);
 
-  // Listener connessione
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      sync(); // sync automatica
+      sync();
     };
     const handleOffline = () => setIsOnline(false);
 

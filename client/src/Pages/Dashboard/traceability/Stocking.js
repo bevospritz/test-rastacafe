@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import BackButton from "../../../components/BackButton";
 import "../Traceability.css";
 
 const BEBIDA_OPTIONS = [
@@ -122,6 +123,7 @@ const Stocking = () => {
 
   return (
     <div className="form-container">
+    <BackButton to="/dashboard/traceability/manage-lot" />
       <h2>Stocking</h2>
       <p className="page-subtitle">
         Visualizza e aggiorna i dettagli dei lotti puliti prima della vendita.

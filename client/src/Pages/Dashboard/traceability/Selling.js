@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Modal from "react-modal";
 import { useLang } from "../../../LanguageContext";
+import BackButton from "../../../components/BackButton";
 import "../Traceability.css";
 
 Modal.setAppElement("#root");
@@ -263,6 +264,7 @@ const Selling = () => {
 
   return (
     <div className="form-container" style={{ maxWidth: "1000px" }}>
+    <BackButton to="/dashboard/traceability/manage-lot" />
       <h2>{t("sellingTitle")}</h2>
       <p className="page-subtitle">{t("sellingSubtitle")}</p>
 
@@ -333,7 +335,7 @@ const Selling = () => {
                           : ""
                       }
                     >
-                      {complete ? t("sell") : ` ${t("⚠️ sell")}`}
+                      {complete ? t("sell") : `⚠️ ${t("sell")}`}
                     </button>
                     {/* Bottone perdita — visibile solo se ci sono sacchi residui */}
                     {hasResidual && (

@@ -105,6 +105,8 @@ const translations = {
     noDespolpador: "Senza despolpador il Mature+Green sarà classificato come",
     totalVolume: "Volume totale",
     confirmSend: "Conferma",
+    lotPending:
+      "Questo lotto è stato creato offline e non può essere processato finché non viene sincronizzato.",
 
     // Fermentation
     fermentationTitle: "Fermentazione",
@@ -120,15 +122,27 @@ const translations = {
     rotative: "Rotativa",
     bigBag: "Big Bag",
     lotsFermenting: "Lotti in fermentazione",
+    fermentationStarted: "Fermentazione salvata con successo!",
+    fermentationEnded: "Fermentazione chiusa con successo!",
+    selectAtLeastOne: "Seleziona almeno un lotto.",
 
     // Drying
     dryingTitle: "Essiccazione",
     selectPatioLots: "Seleziona i lotti dal Patio",
     totalVolumeSelected: "Volume totale selezionato",
     timeIn: "Ora Entrata",
+    dryerSaved: "Dryer salvato e lotti aggiornati con successo!",
+    incompleteData: "Errore: dati incompleti, controlla i campi del form.",
+    cdMixWarning:
+      "Attenzione: stai aggiungendo un lotto CD a lotti di tipo diverso. Sei sicuro?",
+    mixWarning:
+      "Attenzione: stai aggiungendo un lotto non-CD a lotti CD. Tipo:",
 
     // Resting
     restingTitle: "Riposo in tulha",
+    restSaved: "Rest salvato correttamente!",
+    totalSelectedVolume: "Volume totale selezionato",
+    time: "Ora",
 
     // Cleaning
     cleaningTitle: "Beneficio",
@@ -145,6 +159,7 @@ const translations = {
     destination: "Deposito di destinazione",
     noDeposit: "Nessun deposito (vendita diretta)",
     selected: "selezionata",
+    cleaningRegistered: "Cleaning registrato con successo! Lotto: {{lot}}",
 
     // Stocking
     stockingTitle: "Stoccaggio",
@@ -392,6 +407,8 @@ const translations = {
     noDespolpador: "Sem despolpador o Maduro+Verde será classificado como",
     totalVolume: "Volume total",
     confirmSend: "Confirmar",
+    lotPending:
+      "Este lote foi criado offline e não pode ser processado até ser sincronizado.",
 
     // Fermentation
     fermentationTitle: "Fermentação",
@@ -407,15 +424,27 @@ const translations = {
     rotative: "Rotativo",
     bigBag: "Big Bag",
     lotsFermenting: "Lotes em fermentação",
+    fermentationStarted: "Fermentação salva com sucesso!",
+    fermentationEnded: "Fermentação encerrada com sucesso!",
+    selectAtLeastOne: "Selecione pelo menos um lote.",
 
     // Drying
     dryingTitle: "Secagem",
     selectPatioLots: "Selecione os lotes do Terreiro",
     totalVolumeSelected: "Volume total selecionado",
     timeIn: "Hora de Entrada",
+    dryerSaved: "Secador salvo e lotes atualizados com sucesso!",
+    incompleteData: "Erro: dados incompletos, verifique os campos.",
+    cdMixWarning:
+      "Atenção: você está adicionando um lote CD a lotes de tipo diferente. Tem certeza?",
+    mixWarning:
+      "Atenção: você está adicionando um lote não-CD a lotes CD. Tipo:",
 
     // Resting
     restingTitle: "Tulha",
+    restSaved: "Descanso salvo corretamente!",
+    totalSelectedVolume: "Volume total selecionado",
+    time: "Hora",
 
     // Cleaning
     cleaningTitle: "Beneficiamento",
@@ -432,6 +461,7 @@ const translations = {
     destination: "Depósito de destino",
     noDeposit: "Sem depósito (venda direta)",
     selected: "selecionada",
+    cleaningRegistered: "Beneficiamento registrado com sucesso! Lote: {{lot}}",
 
     // Stocking
     stockingTitle: "Estocagem",

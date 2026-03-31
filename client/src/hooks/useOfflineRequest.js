@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import axios from "axios";
 import { addPendingOp, setCache, getCache } from "../db/offlineDB";
 import { useOffline } from "../OfflineContext";
+import { getPendingOps } from "../db/offlineDB";
 
 const useOfflineRequest = () => {
   const { isOnline, refreshPendingCount } = useOffline();
@@ -32,11 +33,16 @@ const useOfflineRequest = () => {
     }
   }, [isOnline, refreshPendingCount]);
 
+  const hasPending = useCallback(async () => {
+  const ops = await getPendingOps();
+  return ops.length > 0;
+}, []);
+
   const post = useCallback((url, data) => request("POST", url, data), [request]);
   const patch = useCallback((url, data) => request("PATCH", url, data), [request]);
   const del = useCallback((url) => request("DELETE", url), [request]);
 
-  return { get, post, patch, del };
+  return { get, post, patch, del, hasPending };
 };
 
 export default useOfflineRequest;

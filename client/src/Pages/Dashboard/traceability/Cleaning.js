@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useLang } from "../../../LanguageContext";
+import { useOffline } from "../../../OfflineContext";
+import useOfflineRequest from "../../../hooks/useOfflineRequest";
+import PendingBanner from "../../../components/PendingBanner";
+import BackButton from "../../../components/BackButton";
 import "../Traceability.css";
+
+const BASE_URL = "http://localhost:5000";
 
 const toYMD = (d) => {
   if (!d) return null;
@@ -12,6 +17,8 @@ const today = toYMD(new Date());
 
 const Cleaning = () => {
   const { t } = useLang();
+  const { isOnline } = useOffline();
+  const { get, post } = useOfflineRequest();
   const [tulhas, setTulhas] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [selectedTulhas, setSelectedTulhas] = useState([]);
@@ -35,45 +42,41 @@ const Cleaning = () => {
       : null;
 
   const validateDate = (date) => {
-    if (!date) return "Seleziona una data.";
-    if (date > today) return `La data non può essere nel futuro.`;
+    if (!date) return t("selectDate");
+    if (date > today) return t("dateInFuture");
     if (minDate && date < minDate)
-      return `La data non può essere precedente al patio più recente (${new Date(minDate).toLocaleDateString("it-IT")}).`;
+      return `${t("dateBeforeHarvest")} (${new Date(minDate).toLocaleDateString("it-IT")}).`;
     return null;
   };
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/restforcleaning")
-      .then((res) => setTulhas(res.data || []))
+    get(`${BASE_URL}/api/restforcleaning`)
+      .then((data) => setTulhas(data || []))
       .catch((err) => {
         console.error("Errore caricamento tulhas:", err);
         setTulhas([]);
       });
-  }, []);
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/deposits")
-      .then((res) => setDeposits(res.data || []))
+    get(`${BASE_URL}/api/deposits`)
+      .then((data) => setDeposits(data || []))
       .catch((err) => {
         console.error("Errore caricamento deposits:", err);
         setDeposits([]);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleTulha = (tulha) => {
     const key = tulha.tulha;
     const isSelected = !!selectedTulhas.find((t) => t.tulha === key);
-
     if (isSelected) {
       setSelectedTulhas((prev) => prev.filter((t) => t.tulha !== key));
       setTulhaVolumes((prev) => {
-        const updated = { ...prev };
-        delete updated[key];
-        return updated;
+        const u = { ...prev };
+        delete u[key];
+        return u;
       });
     } else {
       setSelectedTulhas((prev) => [...prev, tulha]);
@@ -81,40 +84,30 @@ const Cleaning = () => {
     }
   };
 
-  const handleSliderChange = (key, value) => {
+  const handleSliderChange = (key, value) =>
     setTulhaVolumes((prev) => ({ ...prev, [key]: value }));
-  };
 
-  const getUsedVolume = (tulha) => {
-    const perc = tulhaVolumes[tulha.tulha] || 0;
-    return Math.round((perc / 100) * tulha.totalVolume);
-  };
+  const getUsedVolume = (tulha) =>
+    Math.round(((tulhaVolumes[tulha.tulha] || 0) / 100) * tulha.totalVolume);
 
   const totalVolume = selectedTulhas.reduce(
     (sum, t) => sum + getUsedVolume(t),
     0,
   );
 
-  // Calcola lo stato FIFO di ogni sublotto dato il volume usato
-  // Restituisce array con aggiunta della prop 'fifoState': 'consumed' | 'partial' | 'untouched'
   const getFifoStates = (lots, volumeUsed) => {
     const sortedLots = [...lots].sort((a, b) => {
       if (!a.dateIn) return 1;
       if (!b.dateIn) return -1;
       return new Date(a.dateIn) - new Date(b.dateIn);
     });
-
     let remaining = volumeUsed;
-
     return sortedLots.map((lot) => {
-      if (remaining <= 0) {
-        return { ...lot, fifoState: "untouched" };
-      }
+      if (remaining <= 0) return { ...lot, fifoState: "untouched" };
       if (remaining >= lot.volume) {
         remaining -= lot.volume;
         return { ...lot, fifoState: "consumed" };
       }
-      // parzialmente consumato
       const partialLeft = lot.volume - remaining;
       remaining = 0;
       return { ...lot, fifoState: "partial", partialLeft };
@@ -123,12 +116,11 @@ const Cleaning = () => {
 
   const generateNLot = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:5000/api/cleaning/last-nlot",
+      const data = await get(`${BASE_URL}/api/cleaning/last-nlot`);
+      const last = data.cleaning_nLot || "C00000";
+      return (
+        "C" + (parseInt(last.substring(1)) + 1).toString().padStart(5, "0")
       );
-      const last = res.data.cleaning_nLot || "C00000";
-      const nextNum = parseInt(last.substring(1)) + 1;
-      return "C" + nextNum.toString().padStart(5, "0");
     } catch {
       return "C00001";
     }
@@ -137,29 +129,19 @@ const Cleaning = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-
     const error = validateDate(form.date);
     if (error) {
       alert(error);
       return;
     }
-
     if (selectedTulhas.length === 0) {
-      alert("Seleziona almeno una tulha");
+      alert(t("selectAtLeastOne"));
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const nLot = await generateNLot();
-
-      const lots = selectedTulhas.map((t) => ({
-        tulha: t.tulha,
-        volumeUsed: getUsedVolume(t),
-        rest_ids: t.lots.map((l) => l.rest_id),
-      }));
-
       const cleaningPayload = {
         date: form.date,
         volume: totalVolume,
@@ -169,34 +151,59 @@ const Cleaning = () => {
         cata: form.cata ? parseInt(form.cata) : null,
         deposit: form.deposit || null,
         cleaning_nLot: nLot,
-        lots,
+        lots: selectedTulhas.map((t) => ({
+          tulha: t.tulha,
+          volumeUsed: getUsedVolume(t),
+          rest_ids: t.lots.map((l) => l.rest_id),
+        })),
       };
 
-      await axios.post("http://localhost:5000/api/cleaning", cleaningPayload);
-      alert(`Cleaning registrato con successo! Lotto: ${nLot}`);
+      const res = await post(`${BASE_URL}/api/cleaning`, cleaningPayload);
+      alert(
+        res.offline
+          ? t("savedOffline")
+          : t("cleaningRegistered", { lot: nLot }),
+      );
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore durante il cleaning:", err);
-      alert("Errore durante il salvataggio. Operazione annullata.");
+      alert(t("error"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => navigate("/dashboard/traceability/manage-lot");
-
   const isFormValid =
     form.date && form.weight && form.deposit && selectedTulhas.length > 0;
 
   return (
     <div className="form-container">
+      <BackButton to="/dashboard/traceability/manage-lot" />
       <h2>{t("cleaningTitle")}</h2>
+
+      <PendingBanner blockSubmit={false} />
+
+      {!isOnline && (
+        <div
+          style={{
+            padding: "8px 14px",
+            marginBottom: "1rem",
+            backgroundColor: "#fff3e0",
+            border: "1px solid #ffcc80",
+            borderRadius: "6px",
+            fontSize: "0.85rem",
+            color: "#e65100",
+          }}
+        >
+          ⚠️ {t("offlineBanner")}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <h3>{t("selectTulhas")}</h3>
         {tulhas.length === 0 ? (
-          <p className="empty-state">
-            {t("noDepoForCleaning")}
-          </p>
+          <p className="empty-state">{t("noDepoForCleaning")}</p>
         ) : (
           <div className="tulha-grid">
             {tulhas.map((tulha) => {
@@ -205,13 +212,11 @@ const Cleaning = () => {
               );
               const usedVolume = isSelected ? getUsedVolume(tulha) : 0;
               const lotsWithFifo = getFifoStates(tulha.lots || [], usedVolume);
-
               return (
                 <div
                   key={tulha.tulha}
                   className={`tulha-card ${isSelected ? "selected" : ""}`}
                 >
-                  {/* Header */}
                   <div
                     className="tulha-card-header"
                     onClick={() => toggleTulha(tulha)}
@@ -226,20 +231,17 @@ const Cleaning = () => {
                         {t("tulha")} {tulha.tulha}
                       </div>
                       <div className="tulha-card-volume">
-                        {tulha.totalVolume.toLocaleString("it-IT")} {t("totalLiters")}
+                        {tulha.totalVolume.toLocaleString("it-IT")}{" "}
+                        {t("totalLiters")}
                         {" · "}
                         {tulha.lots.length} lote
                         {tulha.lots.length > 1 ? "s" : ""}
                       </div>
                     </div>
                   </div>
-
                   <hr className="card-divider" />
-
-                  {/* Sublotti con stato FIFO */}
                   <div className="sublot-list">
                     {lotsWithFifo.map((lot, i) => {
-                      // Classe CSS in base allo stato FIFO
                       const fifoClass = isSelected
                         ? lot.fifoState === "consumed"
                           ? "consumed"
@@ -249,7 +251,6 @@ const Cleaning = () => {
                         : i === 0
                           ? "fifo-first"
                           : "";
-
                       return (
                         <div key={i} className={`sublot-row ${fifoClass}`}>
                           <span className="sublot-date">
@@ -268,8 +269,6 @@ const Cleaning = () => {
                       );
                     })}
                   </div>
-
-                  {/* Slider */}
                   {isSelected && (
                     <div className="slider-container">
                       <div className="slider-label">
@@ -302,7 +301,7 @@ const Cleaning = () => {
 
         {selectedTulhas.length > 0 && (
           <div className="total-volume-box">
-            {t("totalVolumeToClean")}:
+            {t("totalVolumeToClean")}:{" "}
             <strong>{totalVolume.toLocaleString("it-IT")} L</strong>
             {" · "}
             <span className="total-volume-muted">
@@ -421,7 +420,7 @@ const Cleaning = () => {
             className="action-button"
             disabled={!isFormValid || isSubmitting || !!validateDate(form.date)}
           >
-            {isSubmitting ? "Salvataggio..." : t("confirm")}
+            {isSubmitting ? t("saving") : t("confirm")}
           </button>
           <button
             type="button"

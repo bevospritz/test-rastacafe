@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useLang } from "../../../LanguageContext";
+import { useOffline } from "../../../OfflineContext";
+import useOfflineRequest from "../../../hooks/useOfflineRequest";
+import { isNLotPending } from "../../../db/offlineDB";
+import PendingBanner from "../../../components/PendingBanner";
+import BackButton from "../../../components/BackButton";
 import "../Traceability.css";
 
-// Helpers date
-const toYMD = (d) => {
-  if (!d) return null;
-  return new Date(d).toISOString().split("T")[0];
-};
+const BASE_URL = "http://localhost:5000";
+
+const toYMD = (d) => { if (!d) return null; return new Date(d).toISOString().split("T")[0]; };
 const today = toYMD(new Date());
 
 const getMinDate = (lots, dateField = "date") => {
@@ -27,25 +29,13 @@ const validateDate = (date, minDate, label = "del passo precedente") => {
   return null;
 };
 
-// Componente input data riutilizzabile con feedback
 const DateInput = ({ value, onChange, minDate, label }) => {
   const error = value ? validateDate(value, minDate) : null;
   return (
     <label>
       {label}:
-      <input
-        type="date"
-        value={value}
-        min={minDate || undefined}
-        max={today}
-        onChange={onChange}
-        required
-      />
-      {error && (
-        <span style={{ color: "var(--color-danger)", fontSize: "0.82rem", marginTop: "4px", display: "block" }}>
-          ⚠️ {error}
-        </span>
-      )}
+      <input type="date" value={value} min={minDate || undefined} max={today} onChange={onChange} required />
+      {error && <span style={{ color: "var(--color-danger)", fontSize: "0.82rem", marginTop: "4px", display: "block" }}>⚠️ {error}</span>}
       {minDate && !error && value && (
         <span style={{ color: "var(--color-text-muted)", fontSize: "0.82rem", marginTop: "4px", display: "block" }}>
           Data minima: {new Date(minDate).toLocaleDateString("it-IT")}
@@ -57,6 +47,8 @@ const DateInput = ({ value, onChange, minDate, label }) => {
 
 function Fermentation() {
   const { t } = useLang();
+  const { isOnline } = useOffline();
+  const { get, post, patch } = useOfflineRequest();
   const [step, setStep] = useState(null);
   const [patioLots, setPatioLots] = useState([]);
   const [selectedLots, setSelectedLots] = useState([]);
@@ -64,35 +56,38 @@ function Fermentation() {
   const [lotVolumes, setLotVolumes] = useState({});
   const [activeFermentations, setActiveFermentations] = useState([]);
   const [patioOptions, setPatioOptions] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ patio: "", date: "", timeIn: "", timeOut: "" });
 
   const navigate = useNavigate();
 
   const fetchActiveFermentations = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/fermentation/active");
-      setActiveFermentations(response.data);
+      const data = await get(`${BASE_URL}/api/fermentation/active`);
+      setActiveFermentations(data);
     } catch (err) {
       console.error("Errore caricamento fermentazioni attive:", err);
     }
   };
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/patio")
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : res.data.data;
-        setPatioLots(data.filter((lot) => lot.status !== "finished"));
+    get(`${BASE_URL}/api/patio`)
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : data.data;
+        setPatioLots((arr || []).filter((lot) => lot.status !== "finished"));
       })
       .catch(() => setPatioLots([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/elements")
-      .then((res) => setPatioOptions(res.data.filter((e) => e.element === "Patio")))
+    get(`${BASE_URL}/api/elements`)
+      .then((data) => setPatioOptions((data || []).filter((e) => e.element === "Patio")))
       .catch((err) => console.error("Errore caricamento opzioni patio:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { fetchActiveFermentations(); }, []);
+  useEffect(() => { fetchActiveFermentations(); }, []); // eslint-disable-line
 
   const getDisplayVolume = (lot) =>
     lot.status === "split" && lot.partial_volume != null ? lot.partial_volume : lot.volume;
@@ -101,28 +96,28 @@ function Fermentation() {
     const hasCD = currentSelected.some((l) => l.type === "CD");
     const isCD = lot.type === "CD";
     const hasNonCD = currentSelected.some((l) => l.type !== "CD");
-    if (isCD && hasNonCD)
-      return window.confirm("Attenzione: stai aggiungendo un lotto CD a lotti di tipo diverso.\n\nSei sicuro di voler mescolare i tipi?");
-    if (!isCD && hasCD)
-      return window.confirm("Attenzione: stai aggiungendo un lotto " + lot.type + " a lotti di tipo CD.\n\nSei sicuro di voler mescolare i tipi?");
+    if (isCD && hasNonCD) return window.confirm(t("cdMixWarning"));
+    if (!isCD && hasCD) return window.confirm(`${t("mixWarning")} ${lot.type}?`);
     return true;
   };
 
-  const handleSelectLot = (lot) => {
+  const handleSelectLot = async (lot) => {
     const exists = selectedLots.find((l) => l.id === lot.id);
     if (exists) {
       setSelectedLots((prev) => prev.filter((l) => l.id !== lot.id));
       setLotVolumes((prev) => { const u = { ...prev }; delete u[lot.id]; return u; });
       return;
     }
+    // Controlla se il lotto patio è pending
+    const pending = await isNLotPending(lot.patio_nLot);
+    if (pending) { alert(t("lotPending")); return; }
     if (!checkCDMix(lot, selectedLots)) return;
     setSelectedLots((prev) => [...prev, lot]);
     setLotVolumes((prev) => ({ ...prev, [lot.id]: 100 }));
   };
 
-  const handleSliderChange = (lot, value) => {
+  const handleSliderChange = (lot, value) =>
     setLotVolumes((prev) => ({ ...prev, [lot.id]: value }));
-  };
 
   const calculateTotalPartialVolume = () =>
     selectedLots.reduce((sum, lot) => {
@@ -130,11 +125,8 @@ function Fermentation() {
       return sum + Math.round((perc / 100) * getDisplayVolume(lot));
     }, 0);
 
-  // minDate START — data più recente dei patio selezionati
   const minDateStart = getMinDate(selectedLots, "date");
   const dateErrorStart = form.date ? validateDate(form.date, minDateStart, "del patio selezionato") : null;
-
-  // minDate END — data di inizio fermentazione più recente
   const minDateEnd = getMinDate(selectedLots, "date");
   const dateErrorEnd = form.date ? validateDate(form.date, minDateEnd, "di inizio fermentazione") : null;
 
@@ -146,7 +138,7 @@ function Fermentation() {
 
   const handleSubmitStart = async (e) => {
     e.preventDefault();
-    if (selectedLots.length === 0) { alert("Seleziona almeno un lotto."); return; }
+    if (selectedLots.length === 0) { alert(t("selectAtLeastOne")); return; }
     const error = validateDate(form.date, minDateStart, "del patio selezionato");
     if (error) { alert(error); return; }
 
@@ -162,25 +154,30 @@ function Fermentation() {
       })),
     };
 
+    setIsSubmitting(true);
     try {
-      await axios.post("http://localhost:5000/api/fermentation", fermentationPayload);
-      await axios.patch("http://localhost:5000/api/patio/update-lots-fermentation", {
-        lots: selectedLots.map((lot) => ({
-          id: lot.id,
-          volumeUsed: Math.round((lotVolumes[lot.id] / 100) * getDisplayVolume(lot)),
-        })),
-      });
-      alert("Fermentazione salvata con successo!");
+      const res = await post(`${BASE_URL}/api/fermentation`, fermentationPayload);
+      if (!res.offline) {
+        await patch(`${BASE_URL}/api/patio/update-lots-fermentation`, {
+          lots: selectedLots.map((lot) => ({
+            id: lot.id,
+            volumeUsed: Math.round((lotVolumes[lot.id] / 100) * getDisplayVolume(lot)),
+          })),
+        });
+      }
+      alert(res.offline ? t("savedOffline") : t("fermentationStarted"));
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore:", err.response ? err.response.data : err.message);
-      alert("Errore durante il salvataggio.");
+      alert(t("error"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSubmitEnd = async (e) => {
     e.preventDefault();
-    if (selectedLots.length === 0) { alert("Seleziona almeno un lotto."); return; }
+    if (selectedLots.length === 0) { alert(t("selectAtLeastOne")); return; }
     const error = validateDate(form.date, minDateEnd, "di inizio fermentazione");
     if (error) { alert(error); return; }
 
@@ -193,41 +190,46 @@ function Fermentation() {
       fermented: 1,
     };
 
+    setIsSubmitting(true);
     try {
-      const response = await axios.post("http://localhost:5000/api/patio", [patioPayload]);
-      const patioIds = response.data.patioRecords?.map((p) => p.id) || [];
-      if (patioIds.length === 0) throw new Error("Nessun patioId ottenuto.");
+      const response = await post(`${BASE_URL}/api/patio`, [patioPayload]);
 
-      const patioPrevnlotPayload = [];
-      for (const lot of selectedLots) {
-        let prev_nLot_newlot = null;
-        try {
-          const res = await axios.get(`http://localhost:5000/api/trace/prev-nlot-newlot/${lot.fermentation_nLot}`);
-          prev_nLot_newlot = res.data.prev_nLot_newlot;
-        } catch (err) {
-          console.warn(`prev_nLot_newlot non trovato per ${lot.fermentation_nLot}`, err);
-        }
-        patioIds.forEach((patioId) => {
-          patioPrevnlotPayload.push({
-            patio_id: patioId,
-            prev_nLot_fermentation: lot.fermentation_nLot,
-            prev_nLot_newlot: prev_nLot_newlot || null,
+      if (!response.offline) {
+        const patioIds = response.patioRecords?.map((p) => p.id) || [];
+        if (patioIds.length === 0) throw new Error("Nessun patioId ottenuto.");
+
+        const patioPrevnlotPayload = [];
+        for (const lot of selectedLots) {
+          let prev_nLot_newlot = null;
+          try {
+            const res = await get(`${BASE_URL}/api/trace/prev-nlot-newlot/${lot.fermentation_nLot}`);
+            prev_nLot_newlot = res.prev_nLot_newlot;
+          } catch (err) {
+            console.warn(`prev_nLot_newlot non trovato per ${lot.fermentation_nLot}`, err);
+          }
+          patioIds.forEach((patioId) => {
+            patioPrevnlotPayload.push({
+              patio_id: patioId,
+              prev_nLot_fermentation: lot.fermentation_nLot,
+              prev_nLot_newlot: prev_nLot_newlot || null,
+            });
           });
+        }
+        await post(`${BASE_URL}/api/patio_prevnlot_fermentation`, patioPrevnlotPayload);
+        await patch(`${BASE_URL}/api/fermentation/update-lots`, {
+          lots: selectedLots.map((lot) => ({
+            id: lot.id, dateOut: form.date, timeOut: form.timeOut, worked: 1,
+          })),
         });
       }
 
-      await axios.post("http://localhost:5000/api/patio_prevnlot_fermentation", patioPrevnlotPayload);
-      await axios.patch("http://localhost:5000/api/fermentation/update-lots", {
-        lots: selectedLots.map((lot) => ({
-          id: lot.id, dateOut: form.date, timeOut: form.timeOut, worked: 1,
-        })),
-      });
-
-      alert("Fermentazione chiusa con successo!");
+      alert(response.offline ? t("savedOffline") : t("fermentationEnded"));
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore:", err.response ? err.response.data : err.message);
-      alert("Errore durante il salvataggio.");
+      alert(t("error"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -235,15 +237,21 @@ function Fermentation() {
 
   return (
     <div className="form-container">
+    <BackButton to="/dashboard/traceability/manage-lot" />
       <h2>{t("fermentationTitle")}</h2>
 
+      <PendingBanner blockSubmit={false} />
+
+      {!isOnline && (
+        <div style={{ padding: "8px 14px", marginBottom: "1rem", backgroundColor: "#fff3e0",
+          border: "1px solid #ffcc80", borderRadius: "6px", fontSize: "0.85rem", color: "#e65100" }}>
+          ⚠️ {t("offlineBanner")}
+        </div>
+      )}
+
       <div className="button-container">
-        <button type="button" className="action-button" onClick={() => resetStep("start")}>
-          {t("startFermentation")}
-        </button>
-        <button type="button" className="action-button" onClick={() => resetStep("end")}>
-          {t("endFermentation")}
-        </button>
+        <button type="button" className="action-button" onClick={() => resetStep("start")}>{t("startFermentation")}</button>
+        <button type="button" className="action-button" onClick={() => resetStep("end")}>{t("endFermentation")}</button>
       </div>
 
       {step === "start" && (
@@ -263,9 +271,7 @@ function Fermentation() {
                   <td>{lot.type}</td>
                 </tr>
               ))}
-              {patioLots.length === 0 && (
-                <tr><td colSpan={5} className="empty-state">{t("noLotsAvailable")}</td></tr>
-              )}
+              {patioLots.length === 0 && <tr><td colSpan={5} className="empty-state">{t("noLotsAvailable")}</td></tr>}
             </tbody>
           </table>
 
@@ -292,21 +298,15 @@ function Fermentation() {
             </div>
           )}
 
-          <DateInput
-            label={t("startDate")}
-            value={form.date}
-            minDate={minDateStart}
-            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-          />
+          <DateInput label={t("startDate")} value={form.date} minDate={minDateStart}
+            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))} />
 
-          <label>
-            {t("timeIn")}:
+          <label>{t("timeIn")}:
             <input type="time" value={form.timeIn}
               onChange={(e) => setForm((prev) => ({ ...prev, timeIn: e.target.value }))} required />
           </label>
 
-          <label>
-            {t("fermentationType")}:
+          <label>{t("fermentationType")}:
             <select value={fermentationType} onChange={(e) => setFermentationType(e.target.value)} required>
               <option value="Barrel">{t("barrel")}</option>
               <option value="Tank">{t("tank")}</option>
@@ -317,8 +317,8 @@ function Fermentation() {
 
           <div className="button-container">
             <button className="action-button" onClick={handleSubmitStart}
-              disabled={!!dateErrorStart || !form.date || !form.timeIn || selectedLots.length === 0}>
-              {t("confirm")}
+              disabled={!!dateErrorStart || !form.date || !form.timeIn || selectedLots.length === 0 || isSubmitting}>
+              {isSubmitting ? t("saving") : t("confirm")}
             </button>
             <button className="action-button cancel" onClick={handleCancel}>{t("cancel")}</button>
           </div>
@@ -342,40 +342,30 @@ function Fermentation() {
                   <td>{lot.type}</td>
                 </tr>
               ))}
-              {activeFermentations.length === 0 && (
-                <tr><td colSpan={5} className="empty-state">{t("noFermentations")}</td></tr>
-              )}
+              {activeFermentations.length === 0 && <tr><td colSpan={5} className="empty-state">{t("noFermentations")}</td></tr>}
             </tbody>
           </table>
 
-          <DateInput
-            label={t("endDate")}
-            value={form.date}
-            minDate={minDateEnd}
-            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-          />
+          <DateInput label={t("endDate")} value={form.date} minDate={minDateEnd}
+            onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))} />
 
-          <label>
-            {t("endTime")}:
+          <label>{t("endTime")}:
             <input type="time" value={form.timeOut}
               onChange={(e) => setForm((prev) => ({ ...prev, timeOut: e.target.value }))} required />
           </label>
 
-          <label>
-            {t("patio")}:
+          <label>{t("patio")}:
             <select value={form.patio}
               onChange={(e) => setForm((prev) => ({ ...prev, patio: e.target.value }))} required>
               <option value="">{t("selectPatio")}</option>
-              {patioOptions.map((patio) => (
-                <option key={patio.id} value={patio.name}>{patio.name}</option>
-              ))}
+              {patioOptions.map((patio) => <option key={patio.id} value={patio.name}>{patio.name}</option>)}
             </select>
           </label>
 
           <div className="button-container">
             <button className="action-button" onClick={handleSubmitEnd}
-              disabled={!!dateErrorEnd || !form.date || !form.timeOut || !form.patio || selectedLots.length === 0}>
-              {t("confirm")}
+              disabled={!!dateErrorEnd || !form.date || !form.timeOut || !form.patio || selectedLots.length === 0 || isSubmitting}>
+              {isSubmitting ? t("saving") : t("confirm")}
             </button>
             <button className="action-button cancel" onClick={handleCancel}>{t("cancel")}</button>
           </div>
