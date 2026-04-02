@@ -17,14 +17,15 @@ const PORT = process.env.PORT || 5000;
 dotenv.config();
 
 // Middleware per il parsing del body delle richieste
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  }),
+);
 
 app.options("*", cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
-
 
 // Configurazione della sessione
 app.use(sessionMiddleware);
@@ -42,7 +43,6 @@ app.use((req, res, next) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const upload = multer({ dest: "uploads/" });
-
 
 // Endpoint per ottenere l'utente autenticato
 app.get("/api/me", (req, res) => {
@@ -190,7 +190,7 @@ app.get("/api/farm/:id/stats", async (req, res) => {
         COALESCE(SUM(surface), 0) AS totalSurface,
         COALESCE(ROUND(AVG(YEAR(CURDATE()) - age)), 0) AS avgAge
        FROM plots WHERE farmId = ?`,
-      [id]
+      [id],
     );
     res.json(rows[0]);
   } catch (err) {
@@ -451,7 +451,7 @@ app.patch("/api/elements/:id", async (req, res) => {
   try {
     await connection.query(
       "UPDATE elements SET name = ?, notes = ? WHERE id = ?",
-      [name, notes || null, id]
+      [name, notes || null, id],
     );
     res.json({ message: "Elemento aggiornato" });
   } catch (err) {
@@ -684,17 +684,17 @@ app.get("/api/fermentationcard", async (req, res) => {
         f.date,
         f.fermentation_nLot AS name,
         f.volume,
-        f.method AS type,
+        f.method,
+        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
         GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
       FROM fermentation f
       JOIN fermentation_prevnlot fp ON f.id = fp.fermentation_id
-      JOIN patio p ON fp.prev_nLot_patio = p.patio_nlot
+      JOIN patio p ON fp.prev_nLot_patio = p.patio_nLot
       JOIN patio_prevnlot pp ON p.id = pp.patio_id
       JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
       WHERE f.worked = 0
       GROUP BY f.id;
     `;
-
     const [results] = await connection.query(query);
     res.status(200).json(results);
   } catch (err) {
@@ -712,19 +712,19 @@ app.get("/api/restcard", async (req, res) => {
         r.date,
         r.tulha AS name,
         r.volume,
-        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type,
+        GROUP_CONCAT(DISTINCT COALESCE(p.type, p2.type) SEPARATOR ', ') AS type,
         GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
       FROM rest r
       JOIN rest_prevnlot rp ON r.id = rp.rest_id
-      JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
-      JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
-      JOIN patio p ON dp.prev_nLot_patio = p.patio_nlot
-      JOIN patio_prevnlot pp ON p.id = pp.patio_id
-      JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
+      LEFT JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
+      LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+      LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nLot
+      LEFT JOIN patio_prevnlot pp ON COALESCE(p.id, p2.id) = pp.patio_id
+      LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
       WHERE r.status != 'finished'
       GROUP BY r.id;
     `;
-
     const [results] = await connection.query(query);
     res.status(200).json(results);
   } catch (err) {
@@ -744,7 +744,7 @@ app.get("/api/stockingcard", async (req, res) => {
         c.bags,
         c.deposit,
         GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots,
-        GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type
+        GROUP_CONCAT(DISTINCT COALESCE(p.type, p2.type) SEPARATOR ', ') AS type
       FROM cleaning c
       JOIN cleaning_prevnlot cp ON c.id = cp.cleaning_id
       JOIN rest r ON cp.prev_nLot_rest = r.rest_nLot
@@ -755,6 +755,7 @@ app.get("/api/stockingcard", async (req, res) => {
       LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nLot
       LEFT JOIN patio_prevnlot pp ON COALESCE(p.id, p2.id) = pp.patio_id
       LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+      WHERE c.status != 'sold'
       GROUP BY c.id, c.date, c.cleaning_nLot, c.bags, c.deposit
       ORDER BY c.date DESC;
     `;
@@ -763,6 +764,202 @@ app.get("/api/stockingcard", async (req, res) => {
   } catch (err) {
     console.error("Errore /api/stockingcard:", err);
     res.status(500).send("Errore recupero stockingcard");
+  }
+});
+
+// Endpoint per visualizzare, modificare e cancellare i lotti (newlot, patio, dryer, fermentation, rest, cleaning, selling)
+// GET lista lotti per tipo con status
+app.get("/api/lots/:type", async (req, res) => {
+  const { type } = req.params;
+
+  const queries = {
+    newlot: `SELECT * FROM newlot ORDER BY date DESC`,
+    patio: `SELECT * FROM patio ORDER BY date DESC`,
+    dryer: `
+  SELECT d.*, 
+    GROUP_CONCAT(DISTINCT p.type SEPARATOR ', ') AS type
+  FROM dryer d
+  LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+  LEFT JOIN patio p ON dp.prev_nLot_patio = p.patio_nLot
+  GROUP BY d.id
+  ORDER BY d.date DESC
+`,
+    fermentation: `SELECT * FROM fermentation ORDER BY date DESC`,
+    rest: `
+  SELECT r.*, 
+    GROUP_CONCAT(DISTINCT COALESCE(p.type, p2.type) SEPARATOR ', ') AS type
+  FROM rest r
+  LEFT JOIN rest_prevnlot rp ON r.id = rp.rest_id
+  LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
+  LEFT JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
+  LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+  LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nLot
+  GROUP BY r.id
+  ORDER BY r.date DESC
+`,
+    cleaning: `
+  SELECT c.*,
+    GROUP_CONCAT(DISTINCT COALESCE(p.type, p2.type) SEPARATOR ', ') AS type,
+    GROUP_CONCAT(DISTINCT nl.plot SEPARATOR ', ') AS plots
+  FROM cleaning c
+  LEFT JOIN cleaning_prevnlot cp ON c.id = cp.cleaning_id
+  LEFT JOIN rest r ON cp.prev_nLot_rest = r.rest_nLot
+  LEFT JOIN rest_prevnlot rp ON r.id = rp.rest_id
+  LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
+  LEFT JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
+  LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
+  LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nLot
+  LEFT JOIN patio_prevnlot pp ON COALESCE(p.id, p2.id) = pp.patio_id
+  LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
+  GROUP BY c.id
+  ORDER BY c.date DESC
+`,
+    selling: `SELECT s.*, b.name as buyer_name FROM selling s 
+              LEFT JOIN buyers b ON s.buyer_id = b.id ORDER BY s.date DESC`,
+  };
+
+  if (!queries[type]) return res.status(400).json({ error: "Tipo non valido" });
+
+  try {
+    const [rows] = await connection.query(queries[type]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// GET verifica se un lotto ha figli (prima di eliminare)
+app.get("/api/can-delete/:type/:nLot", async (req, res) => {
+  const { type, nLot } = req.params;
+  try {
+    let hasChildren = false;
+    let childType = null;
+
+    if (type === "newlot") {
+      const [r] = await connection.query(
+        "SELECT COUNT(*) as n FROM patio_prevnlot WHERE prev_nLot_newlot = ?",
+        [nLot],
+      );
+      hasChildren = r[0].n > 0;
+      childType = "patio";
+    } else if (type === "patio") {
+      const [r1] = await connection.query(
+        "SELECT COUNT(*) as n FROM dryer_prevnlot WHERE prev_nLot_patio = ?",
+        [nLot],
+      );
+      const [r2] = await connection.query(
+        "SELECT COUNT(*) as n FROM fermentation_prevnlot WHERE prev_nLot_patio = ?",
+        [nLot],
+      );
+      const [r3] = await connection.query(
+        "SELECT COUNT(*) as n FROM rest_prevnlot WHERE prev_nLot_patio = ?",
+        [nLot],
+      );
+      hasChildren = r1[0].n > 0 || r2[0].n > 0 || r3[0].n > 0;
+      childType = "dryer/fermentation/rest";
+    } else if (type === "dryer") {
+      const [r] = await connection.query(
+        "SELECT COUNT(*) as n FROM rest_prevnlot WHERE prev_nLot_dryer = ?",
+        [nLot],
+      );
+      hasChildren = r[0].n > 0;
+      childType = "rest";
+    } else if (type === "fermentation") {
+      const [r] = await connection.query(
+        "SELECT COUNT(*) as n FROM patio_prevnlot_fermentation WHERE prev_nLot_fermentation = ?",
+        [nLot],
+      );
+      hasChildren = r[0].n > 0;
+      childType = "patio";
+    } else if (type === "rest") {
+      const [r] = await connection.query(
+        "SELECT COUNT(*) as n FROM cleaning_prevnlot WHERE prev_nLot_rest = ?",
+        [nLot],
+      );
+      hasChildren = r[0].n > 0;
+      childType = "cleaning";
+    } else if (type === "cleaning") {
+      const [r] = await connection.query(
+        "SELECT COUNT(*) as n FROM selling_prevnlot WHERE prev_nLot_cleaning = ?",
+        [nLot],
+      );
+      hasChildren = r[0].n > 0;
+      childType = "selling";
+    }
+
+    res.json({ canDelete: !hasChildren, childType });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// DELETE lotto per tipo
+app.delete("/api/lots/:type/:id", async (req, res) => {
+  const { type, id } = req.params;
+  const tables = {
+    newlot: "newlot",
+    patio: "patio",
+    dryer: "dryer",
+    fermentation: "fermentation",
+    rest: "rest",
+    cleaning: "cleaning",
+    selling: "selling",
+  };
+  if (!tables[type]) return res.status(400).json({ error: "Tipo non valido" });
+  try {
+    await connection.query(`DELETE FROM ${tables[type]} WHERE id = ?`, [id]);
+    res.json({ message: "Eliminato con successo" });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
+  }
+});
+
+// PATCH modifica campi liberi lotto
+app.patch("/api/lots/:type/:id", async (req, res) => {
+  const { type, id } = req.params;
+  const updates = req.body;
+
+  const forbidden = [
+    "id",
+    "newlot_nLot",
+    "patio_nLot",
+    "dryer_nLot",
+    "rest_nLot",
+    "cleaning_nLot",
+    "fermentation_nLot",
+    "selling_nLot",
+  ];
+
+  for (const field of forbidden) {
+    if (field in updates)
+      return res.status(400).json({
+        error: `Il campo ${field} non può essere modificato.`,
+      });
+  }
+
+  const tables = {
+    newlot: "newlot",
+    patio: "patio",
+    dryer: "dryer",
+    fermentation: "fermentation",
+    rest: "rest",
+    cleaning: "cleaning",
+    selling: "selling",
+  };
+  if (!tables[type]) return res.status(400).json({ error: "Tipo non valido" });
+
+  try {
+    const fields = Object.keys(updates)
+      .map((k) => `\`${k}\` = ?`)
+      .join(", ");
+    const values = [...Object.values(updates), id];
+    await connection.query(
+      `UPDATE ${tables[type]} SET ${fields} WHERE id = ?`,
+      values,
+    );
+    res.json({ message: "Aggiornato con successo" });
+  } catch (err) {
+    res.status(500).json({ error: "Errore server" });
   }
 });
 
@@ -1695,7 +1892,7 @@ app.patch("/api/cleaning/:id", async (req, res) => {
 app.get("/api/cleaning", async (req, res) => {
   try {
     const [results] = await connection.query(
-      "SELECT * FROM cleaning ORDER BY date DESC",
+      "SELECT * FROM cleaning WHERE status != 'sold' ORDER BY date DESC",
     );
     res.status(200).json(results);
   } catch (err) {
@@ -2056,8 +2253,6 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
   }
 });
 
-
-
 //DASHBOARD
 // Dashboard stats per appezzamento
 app.get("/api/dashboard/plot/:codename", async (req, res) => {
@@ -2065,15 +2260,18 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
   try {
     // 1. Info base appezzamento
     const [plotInfo] = await connection.query(
-      "SELECT * FROM plots WHERE codename = ?", [codename]
+      "SELECT * FROM plots WHERE codename = ?",
+      [codename],
     );
-    if (plotInfo.length === 0) return res.status(404).json({ error: "Appezzamento non trovato" });
+    if (plotInfo.length === 0)
+      return res.status(404).json({ error: "Appezzamento non trovato" });
     const plot = plotInfo[0];
 
     // 2. Totale litri raccolti (newlot)
     const [harvest] = await connection.query(
       `SELECT COUNT(*) as nLots, COALESCE(SUM(volume), 0) as totalVolume
-       FROM newlot WHERE plot = ?`, [codename]
+       FROM newlot WHERE plot = ?`,
+      [codename],
     );
 
     // 3. Distribuzione tipi sul patio (CD, Green, Dry, Natural, BigDry)
@@ -2083,7 +2281,8 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
        JOIN patio_prevnlot pp ON p.id = pp.patio_id
        JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
        WHERE nl.plot = ?
-       GROUP BY p.type`, [codename]
+       GROUP BY p.type`,
+      [codename],
     );
 
     // 4. Renda — litri raccolti / peso pulito venduto
@@ -2098,14 +2297,16 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
        LEFT JOIN rest r ON r.id = rp.rest_id
        LEFT JOIN cleaning_prevnlot cp ON cp.prev_nLot_rest = r.rest_nLot
        LEFT JOIN cleaning c ON c.id = cp.cleaning_id
-       WHERE nl.plot = ?`, [codename]
+       WHERE nl.plot = ?`,
+      [codename],
     );
 
     // 5. Andamento raccolta nel tempo (per grafico a linea)
     const [harvestOverTime] = await connection.query(
       `SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(volume) as volume
        FROM newlot WHERE plot = ?
-       GROUP BY month ORDER BY month ASC`, [codename]
+       GROUP BY month ORDER BY month ASC`,
+      [codename],
     );
 
     res.json({

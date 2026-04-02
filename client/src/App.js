@@ -20,6 +20,7 @@ import Resting from "./Pages/Dashboard/traceability/Resting";
 import Cleaning from "./Pages/Dashboard/traceability/Cleaning";
 import Stocking from "./Pages/Dashboard/traceability/Stocking";
 import LotHistory from "./Pages/Dashboard/traceability/Lothistory.js";
+import LotsList from "./Pages/Dashboard/traceability/LotsList.js";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
@@ -37,6 +38,7 @@ const App = () => {
             <Route path="gestione-appezzamenti" element={<PlotsManagement />} />
             <Route path="users" element={<Users />} />
             <Route path="traceability/*" element={<Traceability />}>
+              <Route path="lots/:type" element={<LotsList />} />
               <Route path="manage-lot" element={<ManageLot />} />
               <Route path="manage-lot/new-lot" element={<NewLot />} />
               <Route path="manage-lot/wash-devide" element={<WashDevide />} />
