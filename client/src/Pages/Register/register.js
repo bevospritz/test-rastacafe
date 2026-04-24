@@ -1,137 +1,83 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import "../Login/Auth.css";
 
 const Register = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("worker");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
+    if (password !== confirmPassword) { alert("Le password non coincidono"); return; }
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/register",
-        {
-          email,
-          password,
-          role,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axios.post("http://localhost:5000/register", {
+        username, email, password, role,
+      }, { headers: { "Content-Type": "application/json" } });
 
       if (response.status === 201) {
-        alert("Registration successful");
+        alert("Registrazione avvenuta con successo!");
         navigate("/login");
       }
     } catch (error) {
-      if (error.response && error.response.data.message) {
-        alert(error.response.data.message);
-        if (error.response.data.message === "User already exists") {
-          navigate("/login");
-        }
-      } else {
-        alert("Registration error");
-      }
+      alert(error.response?.data?.message || "Errore durante la registrazione");
     }
   };
 
   return (
-    <div className="Home">
-      <h1>Register</h1>
-      <form onSubmit={handleSubmit}>
-        <label className="label" htmlFor="email">
-          Email:
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <label className="label" htmlFor="password">
-          Password:
-        </label>
-        <div style={{ position: "relative" }}>
-          <input
-            type={showPassword ? "text" : "password"}
-            id="password"
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <span
-            onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: "absolute",
-              right: 10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              cursor: "pointer",
-            }}
-          >
-            {showPassword ? "🙈" : "👁️"}
-          </span>
-        </div>
-        <label className="label" htmlFor="confirmPassword">
-          Confirm Password:
-        </label>
-        <div style={{ position: "relative" }}>
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            id="confirmPassword"
-            name="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          <span
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            style={{
-              position: "absolute",
-              right: 10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              cursor: "pointer",
-            }}
-          >
-            {showConfirmPassword ? "🙈" : "👁️"}
-          </span>
-        </div>
-        <label className="label" htmlFor="role">
-          Role:
-        </label>
-        <select
-          className="label"
-          id="role"
-          name="role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          required
-        >
-          <option value="admin">Admin</option>
-          <option value="manager">Manager</option>
-          <option value="worker">Worker</option>
-        </select>
-        <button type="submit">Register</button>
-      </form>
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1>Registrazione</h1>
+        <p className="auth-subtitle">Crea un nuovo account</p>
+        <form onSubmit={handleSubmit}>
+          <label className="auth-label">Username</label>
+          <input className="auth-input" type="text" value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="es. mario_rossi" required />
+
+          <label className="auth-label">Email</label>
+          <input className="auth-input" type="email" value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="es. mario@fattoria.com" required />
+
+          <label className="auth-label">Password</label>
+          <div className="auth-input-wrap">
+            <input className="auth-input" type={showPassword ? "text" : "password"}
+              value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min. 6 caratteri" required />
+            <span className="auth-eye" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+          </div>
+
+          <label className="auth-label">Conferma Password</label>
+          <div className="auth-input-wrap">
+            <input className="auth-input" type={showConfirm ? "text" : "password"}
+              value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ripeti la password" required />
+            <span className="auth-eye" onClick={() => setShowConfirm(!showConfirm)}>
+              {showConfirm ? "🙈" : "👁️"}
+            </span>
+          </div>
+
+          <label className="auth-label">Ruolo</label>
+          <select className="auth-select" value={role}
+            onChange={(e) => setRole(e.target.value)} required>
+            <option value="admin">Admin</option>
+            <option value="worker">Worker</option>
+            <option value="viewer">Viewer</option>
+          </select>
+
+          <button type="submit" className="auth-btn">Registra</button>
+        </form>
+      </div>
     </div>
   );
 };

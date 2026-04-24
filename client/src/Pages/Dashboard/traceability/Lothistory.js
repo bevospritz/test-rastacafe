@@ -6,27 +6,43 @@ import "./Lothistory.css";
 
 // Colori e icone per ogni tipo di lotto
 const STEP_CONFIG = {
-  Raccolta:      { color: "#6d4c41", bg: "#efebe9", border: "#a1887f", icon: "🌱" },
-  Patio:         { color: "#1565c0", bg: "#e3f2fd", border: "#90caf9", icon: "☀️" },
-  Dryer:         { color: "#e65100", bg: "#fff3e0", border: "#ffcc80", icon: "🔥" },
-  Fermentazione: { color: "#6a1b9a", bg: "#f3e5f5", border: "#ce93d8", icon: "🧪" },
-  Resting:       { color: "#2e7d32", bg: "#e8f5e9", border: "#a5d6a7", icon: "🏠" },
-  Cleaning:      { color: "#00695c", bg: "#e0f2f1", border: "#80cbc4", icon: "✨" },
+  Raccolta: { color: "#6d4c41", bg: "#efebe9", border: "#a1887f", icon: "🌱" },
+  Patio: { color: "#1565c0", bg: "#e3f2fd", border: "#90caf9", icon: "☀️" },
+  Dryer: { color: "#e65100", bg: "#fff3e0", border: "#ffcc80", icon: "🔥" },
+  Fermentazione: {
+    color: "#6a1b9a",
+    bg: "#f3e5f5",
+    border: "#ce93d8",
+    icon: "🧪",
+  },
+  Resting: { color: "#2e7d32", bg: "#e8f5e9", border: "#a5d6a7", icon: "🏠" },
+  Cleaning: { color: "#00695c", bg: "#e0f2f1", border: "#80cbc4", icon: "✨" },
+  Vendita: { color: "#1b5e20", bg: "#e8f5e9", border: "#66bb6a", icon: "💰" },
 };
 
 const LotNode = ({ node, isRoot }) => {
-  const config = STEP_CONFIG[node.type] || { color: "#333", bg: "#f5f5f5", border: "#ccc", icon: "📦" };
+  const config = STEP_CONFIG[node.type] || {
+    color: "#333",
+    bg: "#f5f5f5",
+    border: "#ccc",
+    icon: "📦",
+  };
   const d = node.data;
 
   return (
     <div className="flow-branch">
       <div
-        className={`flow-node ${isRoot ? "flow-node-root" : ""}`}
+        className={`flow-node ${isRoot ? "flow-node-root" : ""} ${node.highlighted ? "flow-node-highlighted" : ""}`}
         style={{ borderColor: config.border, backgroundColor: config.bg }}
       >
-        <div className="flow-node-header" style={{ backgroundColor: config.border }}>
+        <div
+          className="flow-node-header"
+          style={{ backgroundColor: config.border }}
+        >
           <span className="flow-node-icon">{config.icon}</span>
-          <span className="flow-node-type" style={{ color: config.color }}>{node.type}</span>
+          <span className="flow-node-type" style={{ color: config.color }}>
+            {node.type}
+          </span>
           <span className="flow-node-nlot">{node.nLot}</span>
         </div>
         <div className="flow-node-body">
@@ -41,7 +57,9 @@ const LotNode = ({ node, isRoot }) => {
               {d.volume != null && (
                 <div className="flow-node-row">
                   <span className="flow-node-label">Volume</span>
-                  <span className="flow-node-value">{d.volume.toLocaleString("it-IT")} L</span>
+                  <span className="flow-node-value">
+                    {d.volume.toLocaleString("it-IT")} L
+                  </span>
                 </div>
               )}
               {d.type && (
@@ -74,6 +92,40 @@ const LotNode = ({ node, isRoot }) => {
                   <span className="flow-node-value">{d.deposit}</span>
                 </div>
               )}
+              {d.bags && (
+                <div className="flow-node-row">
+                  <span className="flow-node-label">Sacchi venduti</span>
+                  <span className="flow-node-value">{d.bags}</span>
+                </div>
+              )}
+              {d.buyer_name && (
+                <div className="flow-node-row">
+                  <span className="flow-node-label">Acquirente</span>
+                  <span className="flow-node-value">{d.buyer_name}</span>
+                </div>
+              )}
+              {d.price_per_bag && (
+                <div className="flow-node-row">
+                  <span className="flow-node-label">Prezzo/sacco</span>
+                  <span className="flow-node-value">
+                    {d.price_per_bag} {d.currency}
+                  </span>
+                </div>
+              )}
+              {d.certification && (
+                <div className="flow-node-row">
+                  <span className="flow-node-label">Certificazione</span>
+                  <span className="flow-node-value">
+                    {d.certification} +{d.certification_bonus} {d.currency}
+                  </span>
+                </div>
+              )}
+              {d.notes && (
+                <div className="flow-node-row">
+                  <span className="flow-node-label">Note</span>
+                  <span className="flow-node-value">{d.notes}</span>
+                </div>
+              )}
             </>
           ) : (
             <div className="flow-node-empty">Dati non disponibili</div>
@@ -86,11 +138,11 @@ const LotNode = ({ node, isRoot }) => {
         <div className="flow-children">
           <div className="flow-arrow">↓</div>
           {node.children.length > 1 && (
-            <div className="flow-split-label">
-              {node.children.length} rami
-            </div>
+            <div className="flow-split-label">{node.children.length} rami</div>
           )}
-          <div className={`flow-children-row ${node.children.length > 1 ? "flow-multi" : ""}`}>
+          <div
+            className={`flow-children-row ${node.children.length > 1 ? "flow-multi" : ""}`}
+          >
             {node.children.map((child, i) => (
               <LotNode key={i} node={child} isRoot={false} />
             ))}
@@ -125,7 +177,9 @@ const LotHistory = () => {
     setTree(null);
 
     try {
-      const res = await axios.get(`http://localhost:5000/api/lot-history/${nLot}`);
+      const res = await axios.get(
+        `http://localhost:5000/api/lot-history/${nLot}`,
+      );
       setTree(res.data);
     } catch (err) {
       if (err.response?.status === 404) {
@@ -146,7 +200,8 @@ const LotHistory = () => {
     <div className="form-container">
       <h2>Storia Lotto</h2>
       <p className="page-subtitle">
-        Inserisci il codice di qualsiasi lotto per visualizzarne il percorso completo.
+        Inserisci il codice di qualsiasi lotto per visualizzarne il percorso
+        completo.
       </p>
 
       {/* Barra di ricerca */}
@@ -178,8 +233,13 @@ const LotHistory = () => {
       <div className="flow-legend">
         {Object.entries(STEP_CONFIG).map(([type, config]) => (
           <div key={type} className="flow-legend-item">
-            <span className="flow-legend-dot" style={{ backgroundColor: config.border }} />
-            <span>{config.icon} {type}</span>
+            <span
+              className="flow-legend-dot"
+              style={{ backgroundColor: config.border }}
+            />
+            <span>
+              {config.icon} {type}
+            </span>
           </div>
         ))}
       </div>

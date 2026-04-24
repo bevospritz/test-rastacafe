@@ -1,0 +1,111 @@
+/* ── Auth pages — Login & Register ── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500&display=swap');
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #181818, #666666);
+  font-family: 'Inter', sans-serif;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.auth-card h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2c1810;
+  margin: 0 0 0.25rem;
+}
+
+.auth-subtitle {
+  font-size: 0.85rem;
+  color: #999;
+  margin-bottom: 1.75rem;
+}
+
+.auth-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 4px;
+  margin-top: 1rem;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  background: #fafafa;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #8b6343;
+  background: #fff;
+}
+
+.auth-input-wrap {
+  position: relative;
+}
+
+.auth-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1rem;
+  user-select: none;
+}
+
+.auth-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 1.75rem;
+  background: linear-gradient(135deg, #2c1810, #5c3317);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Syne', sans-serif;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: opacity 0.2s;
+}
+
+.auth-btn:hover { opacity: 0.9; }
+.auth-btn:active { opacity: 0.8; }
+
+.auth-logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+}

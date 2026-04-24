@@ -21,6 +21,7 @@ import Cleaning from "./Pages/Dashboard/traceability/Cleaning";
 import Stocking from "./Pages/Dashboard/traceability/Stocking";
 import LotHistory from "./Pages/Dashboard/traceability/Lothistory.js";
 import LotsList from "./Pages/Dashboard/traceability/LotsList.js";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
@@ -31,7 +32,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard/*" element={<Dashboard />}>
+          <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
             <Route index element={<DashboardAnalytics />} />
             <Route path="structure" element={<ManageFarm />} />
             <Route path="gestione-struttura" element={<GestioneStruttura />} />

@@ -1,4 +1,6 @@
 // app.js
+
+import "./env.js";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -6,15 +8,12 @@ import sessionMiddleware from "./middleware/session.js";
 import connection from "./db.js";
 import cors from "cors";
 import bcrypt from "bcrypt";
-import dotenv from "dotenv";
 import multer from "multer";
 import fs from "fs";
 import * as XLSX from "xlsx";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-dotenv.config();
 
 // Middleware per il parsing del body delle richieste
 app.use(
@@ -44,6 +43,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const upload = multer({ dest: "uploads/" });
 
+// Middleware per proteggere le rotte che richiedono autenticazione
+const requireAuth = (req, res, next) => {
+  if (req.session?.user) {
+    next();
+  } else {
+    res.status(401).json({ message: "Non autenticato" });
+  }
+};
+
 // Endpoint per ottenere l'utente autenticato
 app.get("/api/me", (req, res) => {
   if (req.session?.user) {
@@ -55,35 +63,36 @@ app.get("/api/me", (req, res) => {
 
 // Endpoint di esempio per il register
 app.post("/register", async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password, role, username } = req.body;
 
-  console.log("Request Body:", req.body); // Logga il body della richiesta
-
-  if (!email || !password || !role) {
+  if (!email || !password || !role || !username) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
-    // Verifica se l'email esiste già
-    const [rows] = await connection.execute(
+    // Check email
+    const [byEmail] = await connection.execute(
       "SELECT * FROM users WHERE email = ?",
       [email],
     );
-    if (rows.length > 0) {
-      return res.status(400).json({ message: "User already exists" });
+    if (byEmail.length > 0) {
+      return res.status(400).json({ message: "Email already exists" });
     }
 
-    // Cifra la password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Crea un nuovo utente
-    const [result] = await connection.execute(
-      "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
-      [email, hashedPassword, role],
+    // Check username
+    const [byUsername] = await connection.execute(
+      "SELECT * FROM users WHERE username = ?",
+      [username],
     );
+    if (byUsername.length > 0) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
 
-    console.log("Affected Rows:", result.affectedRows);
-    console.log("Insert ID:", result.insertId);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await connection.execute(
+      "INSERT INTO users (email, password, role, username) VALUES (?, ?, ?, ?)",
+      [email, hashedPassword, role, username],
+    );
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
@@ -145,6 +154,8 @@ app.post("/logout", (req, res) => {
     res.status(400).send({ message: "Nessuna sessione attiva" });
   }
 });
+
+app.use("/api", requireAuth);
 
 //GESTIONE STRUTTURA//
 // Endpoint per ottenere le fattorie
@@ -2123,23 +2134,6 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
   const { nLot } = req.params;
 
   try {
-    // Funzione ricorsiva che costruisce il nodo e i suoi figli
-    const buildTree = async (nLot) => {
-      const prefix = nLot.charAt(0).toUpperCase();
-      let node = { nLot, type: getType(prefix), data: null, children: [] };
-
-      // Carica i dati del nodo corrente
-      node.data = await fetchNodeData(prefix, nLot);
-
-      // Trova i figli in base al tipo
-      const children = await fetchChildren(prefix, nLot);
-      for (const childNLot of children) {
-        node.children.push(await buildTree(childNLot));
-      }
-
-      return node;
-    };
-
     const getType = (prefix) =>
       ({
         H: "Raccolta",
@@ -2148,7 +2142,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         F: "Fermentazione",
         R: "Resting",
         C: "Cleaning",
-        S: "Selling",
+        S: "Vendita",
       })[prefix] || "Sconosciuto";
 
     const fetchNodeData = async (prefix, nLot) => {
@@ -2159,8 +2153,10 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         F: "SELECT fermentation_nLot AS nLot, date, volume, method, type FROM fermentation WHERE fermentation_nLot = ?",
         R: "SELECT rest_nLot AS nLot, date, tulha AS name, volume, status FROM rest WHERE rest_nLot = ?",
         C: "SELECT cleaning_nLot AS nLot, date, volume, weight, bags, deposit FROM cleaning WHERE cleaning_nLot = ?",
-        S: `SELECT selling_nLot AS nLot, date, bags_sold AS bags, price_per_bag, currency 
-    FROM selling WHERE selling_nLot = ?`,
+        S: `SELECT s.selling_nLot AS nLot, s.date, s.bags_sold AS bags, s.price_per_bag, s.currency, s.notes, s.certification, s.certification_bonus, b.name AS buyer_name
+    FROM selling s
+    LEFT JOIN buyers b ON s.buyer_id = b.id
+    WHERE s.selling_nLot = ?`,
       };
       if (!queries[prefix]) return null;
       const [rows] = await connection.query(queries[prefix], [nLot]);
@@ -2169,7 +2165,6 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
 
     const fetchChildren = async (prefix, nLot) => {
       let children = [];
-
       if (prefix === "H") {
         const [rows] = await connection.query(
           `SELECT p.patio_nLot FROM patio p
@@ -2179,21 +2174,18 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         children = rows.map((r) => r.patio_nLot);
       } else if (prefix === "P") {
-        // Figli dryer
         const [dRows] = await connection.query(
           `SELECT d.dryer_nLot FROM dryer d
            JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
            WHERE dp.prev_nLot_patio = ?`,
           [nLot],
         );
-        // Figli fermentation
         const [fRows] = await connection.query(
           `SELECT f.fermentation_nLot FROM fermentation f
            JOIN fermentation_prevnlot fp ON f.id = fp.fermentation_id
            WHERE fp.prev_nLot_patio = ?`,
           [nLot],
         );
-        // Figli rest (diretti da patio)
         const [rRows] = await connection.query(
           `SELECT r.rest_nLot FROM rest r
            JOIN rest_prevnlot rp ON r.id = rp.rest_id
@@ -2214,10 +2206,9 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         children = rows.map((r) => r.rest_nLot);
       } else if (prefix === "F") {
-        // La fermentazione genera un nuovo patio
         const [rows] = await connection.query(
           `SELECT p.patio_nLot FROM patio p
-           JOIN patio_prevnlot pp ON p.id = pp.patio_id
+           JOIN patio_prevnlot_fermentation pp ON p.id = pp.patio_id
            WHERE pp.prev_nLot_fermentation = ?`,
           [nLot],
         );
@@ -2233,19 +2224,124 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
       } else if (prefix === "C") {
         const [rows] = await connection.query(
           `SELECT s.selling_nLot FROM selling s
-     JOIN selling_prevnlot sp ON s.id = sp.selling_id
-     WHERE sp.prev_nLot_cleaning = ?`,
+           JOIN selling_prevnlot sp ON s.id = sp.selling_id
+           WHERE sp.prev_nLot_cleaning = ?`,
           [nLot],
         );
         children = rows.map((r) => r.selling_nLot);
       }
-
-      // C (cleaning) è foglia — nessun figlio per ora (selling verrà aggiunto)
-
-      return [...new Set(children)]; // deduplicazione
+      return [...new Set(children)];
     };
 
-    const tree = await buildTree(nLot);
+    // ← NUOVO: risale ai genitori fino alla radice (newlot)
+    const fetchRoots = async (prefix, nLot) => {
+      let parents = [];
+      if (prefix === "P") {
+        const [r1] = await connection.query(
+          `SELECT pp.prev_nLot_newlot FROM patio_prevnlot pp
+           JOIN patio p ON p.id = pp.patio_id
+           WHERE p.patio_nLot = ?`,
+          [nLot],
+        );
+        parents = r1
+          .filter((r) => r.prev_nLot_newlot)
+          .map((r) => r.prev_nLot_newlot);
+        // anche da fermentazione
+        const [r2] = await connection.query(
+          `SELECT pp.prev_nLot_fermentation FROM patio_prevnlot_fermentation pp
+           JOIN patio p ON p.id = pp.patio_id
+           WHERE p.patio_nLot = ?`,
+          [nLot],
+        );
+        parents = [
+          ...parents,
+          ...r2
+            .filter((r) => r.prev_nLot_fermentation)
+            .map((r) => r.prev_nLot_fermentation),
+        ];
+      } else if (prefix === "D") {
+        const [rows] = await connection.query(
+          `SELECT dp.prev_nLot_patio FROM dryer_prevnlot dp
+           JOIN dryer d ON d.id = dp.dryer_id
+           WHERE d.dryer_nLot = ?`,
+          [nLot],
+        );
+        parents = rows.map((r) => r.prev_nLot_patio);
+      } else if (prefix === "F") {
+        const [rows] = await connection.query(
+          `SELECT fp.prev_nLot_patio FROM fermentation_prevnlot fp
+           JOIN fermentation f ON f.id = fp.fermentation_id
+           WHERE f.fermentation_nLot = ?`,
+          [nLot],
+        );
+        parents = rows.map((r) => r.prev_nLot_patio);
+      } else if (prefix === "R") {
+        const [r1] = await connection.query(
+          `SELECT rp.prev_nLot_patio FROM rest_prevnlot rp
+           JOIN rest r ON r.id = rp.rest_id
+           WHERE r.rest_nLot = ?`,
+          [nLot],
+        );
+        const [r2] = await connection.query(
+          `SELECT rp.prev_nLot_dryer FROM rest_prevnlot rp
+           JOIN rest r ON r.id = rp.rest_id
+           WHERE r.rest_nLot = ?`,
+          [nLot],
+        );
+        parents = [
+          ...r1.filter((r) => r.prev_nLot_patio).map((r) => r.prev_nLot_patio),
+          ...r2.filter((r) => r.prev_nLot_dryer).map((r) => r.prev_nLot_dryer),
+        ];
+      } else if (prefix === "C") {
+        const [rows] = await connection.query(
+          `SELECT cp.prev_nLot_rest FROM cleaning_prevnlot cp
+           JOIN cleaning c ON c.id = cp.cleaning_id
+           WHERE c.cleaning_nLot = ?`,
+          [nLot],
+        );
+        parents = rows.map((r) => r.prev_nLot_rest);
+      } else if (prefix === "S") {
+        const [rows] = await connection.query(
+          `SELECT sp.prev_nLot_cleaning FROM selling_prevnlot sp
+           JOIN selling s ON s.id = sp.selling_id
+           WHERE s.selling_nLot = ?`,
+          [nLot],
+        );
+        parents = rows.map((r) => r.prev_nLot_cleaning);
+      }
+      return [...new Set(parents)];
+    };
+
+    // Risale fino alla radice
+    const findRoot = async (nLot) => {
+      const prefix = nLot.charAt(0).toUpperCase();
+      if (prefix === "H") return nLot; // già alla radice
+      const parents = await fetchRoots(prefix, nLot);
+      if (parents.length === 0) return nLot; // nessun genitore trovato
+      // Risale il primo genitore
+      return await findRoot(parents[0]);
+    };
+
+    // Costruisce l'albero dal nodo
+    const buildTree = async (nLot, highlightNLot) => {
+      const prefix = nLot.charAt(0).toUpperCase();
+      const node = {
+        nLot,
+        type: getType(prefix),
+        data: await fetchNodeData(prefix, nLot),
+        children: [],
+        highlighted: nLot === highlightNLot,
+      };
+      const children = await fetchChildren(prefix, nLot);
+      for (const childNLot of children) {
+        node.children.push(await buildTree(childNLot, highlightNLot));
+      }
+      return node;
+    };
+
+    // Trova la radice e costruisce l'albero completo
+    const rootNLot = await findRoot(nLot);
+    const tree = await buildTree(rootNLot, nLot);
     res.json(tree);
   } catch (err) {
     console.error("Errore /api/lot-history:", err);
