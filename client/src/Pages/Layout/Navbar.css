@@ -14,6 +14,23 @@
   transition: background-color 0.25s ease;
 }
 
+.burger-btn {
+  background: none;
+  border: none;
+  color: var(--chrome-text);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+
+.burger-btn:hover {
+  background-color: var(--chrome-hover-bg);
+}
+
 .navbar-logo {
   display: flex;
   align-items: center;
@@ -22,7 +39,6 @@
 .navbar-logo img {
   height: 35px;
   margin-right: 10px;
-  margin-left: 50px;
   padding: 8px;
 }
 

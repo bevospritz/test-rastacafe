@@ -8,7 +8,7 @@ import { useLang } from "../../LanguageContext";
 import { useOffline } from "../../OfflineContext";
 import { useTheme } from "../../ThemeContext";
 
-function Navbar() {
+function Navbar({ onBurgerClick }) {
   const { t, lang, toggleLang } = useLang();
   const { setUser, user } = useAuth();
   const { isOnline, isSyncing, pendingCount, sync } = useOffline();
@@ -33,7 +33,7 @@ function Navbar() {
     ? user.username.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "?";
 
-  const btnStyle = {
+  const iconBtnStyle = {
     background: "none",
     border: "1px solid rgba(255,255,255,0.3)",
     color: "#fff",
@@ -47,6 +47,13 @@ function Navbar() {
 
   return (
     <nav className="navbar">
+      {/* Burger — first item, inside the bar */}
+      {onBurgerClick && (
+        <button className="burger-btn" onClick={onBurgerClick} aria-label="Toggle sidebar">
+          ☰
+        </button>
+      )}
+
       <div className="navbar-logo">
         <img src={logo} alt="Logo" />
         <h3>RastaCafe</h3>
@@ -81,12 +88,12 @@ function Navbar() {
       </div>
 
       {/* Theme toggle */}
-      <button onClick={toggleTheme} style={btnStyle} title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}>
+      <button onClick={toggleTheme} style={iconBtnStyle} title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}>
         {theme === "light" ? "🌙" : "☀️"}
       </button>
 
       {/* Language toggle */}
-      <button onClick={toggleLang} style={btnStyle}>
+      <button onClick={toggleLang} style={iconBtnStyle}>
         {lang === "IT" ? "🇧🇷 PT" : "🇮🇹 IT"}
       </button>
 

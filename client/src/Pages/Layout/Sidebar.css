@@ -49,22 +49,8 @@
   background-color: var(--chrome-hover-bg);
 }
 
-.burger-menu {
-  display: block;
-  cursor: pointer;
-  font-size: 30px;
-  padding: 10px;
-  background-color: var(--chrome-bg);
-  color: var(--chrome-text);
-  position: fixed;
-  top: 6px;
-  left: 10px;
-  z-index: 1001;
-}
-
 @media (max-width: 768px) {
-  .burger-menu {
-    font-size: 25px;
-    top: 5px;
+  .sidebar {
+    width: 220px;
   }
 }
