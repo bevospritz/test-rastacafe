@@ -6,11 +6,13 @@ import "./Navbar.css";
 import { useAuth } from "../../AuthContext";
 import { useLang } from "../../LanguageContext";
 import { useOffline } from "../../OfflineContext";
+import { useTheme } from "../../ThemeContext";
 
 function Navbar() {
   const { t, lang, toggleLang } = useLang();
   const { setUser, user } = useAuth();
   const { isOnline, isSyncing, pendingCount, sync } = useOffline();
+  const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -27,10 +29,21 @@ function Navbar() {
     }
   };
 
-  // Iniziale username per avatar
   const initial = user?.username
     ? user.username.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || "?";
+
+  const btnStyle = {
+    background: "none",
+    border: "1px solid rgba(255,255,255,0.3)",
+    color: "#fff",
+    borderRadius: "6px",
+    padding: "4px 10px",
+    cursor: "pointer",
+    fontSize: "0.8rem",
+    fontWeight: "600",
+    marginRight: "8px",
+  };
 
   return (
     <nav className="navbar">
@@ -67,12 +80,13 @@ function Navbar() {
         )}
       </div>
 
-      {/* Toggle lingua */}
-      <button onClick={toggleLang} style={{
-        background: "none", border: "1px solid rgba(255,255,255,0.3)",
-        color: "#fff", borderRadius: "6px", padding: "4px 10px",
-        cursor: "pointer", fontSize: "0.8rem", fontWeight: "600", marginRight: "12px",
-      }}>
+      {/* Theme toggle */}
+      <button onClick={toggleTheme} style={btnStyle} title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}>
+        {theme === "light" ? "🌙" : "☀️"}
+      </button>
+
+      {/* Language toggle */}
+      <button onClick={toggleLang} style={btnStyle}>
         {lang === "IT" ? "🇧🇷 PT" : "🇮🇹 IT"}
       </button>
 
@@ -80,7 +94,6 @@ function Navbar() {
       <div className="navbar-user" onClick={toggleDropdown}
         style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
 
-        {/* Avatar con iniziale */}
         <div style={{
           width: "34px", height: "34px", borderRadius: "50%",
           backgroundColor: "#8b6343", color: "#fff",
@@ -91,7 +104,6 @@ function Navbar() {
           {initial}
         </div>
 
-        {/* Username */}
         {user?.username && (
           <span style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.85)", fontWeight: "500" }}>
             {user.username}

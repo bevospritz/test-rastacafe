@@ -1,0 +1,108 @@
+/* =========================================================
+   theme.css — Design token system for RastaCafe
+   Import this once (via index.css). All other files use
+   only var(--*) references — no hardcoded colours.
+   ========================================================= */
+
+:root {
+  /* ── Fonts ── */
+  --font-heading: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* ── Brand palette ── */
+  --brand: #2c1810;
+  --brand-mid: #5c3317;
+  --brand-light: #8b6343;
+  --brand-accent: #c4a882;
+  --brand-pale: #f5e6d3;
+
+  /* ── Page backgrounds ── */
+  --bg-base: #faf8f5;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f5ede4;
+  --bg-hover: #f0e8de;
+  --bg-input: #fafafa;
+
+  /* ── Text ── */
+  --text-primary: #2c1810;
+  --text-secondary: #5c3317;
+  --text-muted: #8b6343;
+  --text-faint: #b09070;
+
+  /* ── Borders ── */
+  --border: #ddd;
+  --border-light: #e8ddd4;
+
+  /* ── Chrome (navbar / sidebar) ── */
+  --chrome-bg: #2c1810;
+  --chrome-surface: #3d2215;
+  --chrome-text: #f5e6d3;
+  --chrome-link: #c4a882;
+  --chrome-link-hover: #f5e6d3;
+  --chrome-hover-bg: rgba(255, 255, 255, 0.08);
+
+  /* ── Semantic / Status ── */
+  --color-primary: #007bff;
+  --color-primary-dark: #0056b3;
+  --color-success: #4caf50;
+  --color-success-light: #e8f5e9;
+  --color-success-border: #c8e6c9;
+  --color-success-dark: #388e3c;
+  --color-danger: #dc3545;
+  --color-warning: #ff9800;
+  --color-edit: #1976d2;
+  --color-edit-light: #f0f7ff;
+  --color-edit-border: #90caf9;
+
+  /* ── Shape ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 4px rgba(44, 24, 16, 0.08);
+  --shadow-md: 0 2px 8px rgba(44, 24, 16, 0.12);
+  --shadow-lg: 0 4px 16px rgba(44, 24, 16, 0.18);
+}
+
+/* ── Dark theme overrides ── */
+[data-theme="dark"] {
+  --brand: #c4a882;
+  --brand-mid: #a08060;
+  --brand-light: #8b7a6a;
+  --brand-accent: #5c3317;
+  --brand-pale: #2a1a10;
+
+  --bg-base: #181818;
+  --bg-surface: #242424;
+  --bg-elevated: #2e2e2e;
+  --bg-hover: #333333;
+  --bg-input: #2a2a2a;
+
+  --text-primary: #f5e6d3;
+  --text-secondary: #c4a882;
+  --text-muted: #9a8a7a;
+  --text-faint: #4a3a2a;
+
+  --border: #3a3a3a;
+  --border-light: #2e2e2e;
+
+  --chrome-bg: #1a1a1a;
+  --chrome-surface: #242424;
+
+  --color-primary: #4a9eff;
+  --color-primary-dark: #2a7fe0;
+  --color-success: #66bb6a;
+  --color-success-light: #1a3a1e;
+  --color-success-border: #2d5a30;
+  --color-success-dark: #4caf50;
+  --color-danger: #ef5350;
+  --color-warning: #ffa726;
+  --color-edit: #42a5f5;
+  --color-edit-light: #0d1f35;
+  --color-edit-border: #1565c0;
+
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.65);
+}

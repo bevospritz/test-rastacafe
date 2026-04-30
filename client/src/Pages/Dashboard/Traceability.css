@@ -1,38 +1,8 @@
 /* =========================================================
    Traceability.css
-   Sistema di stile per tutte le pagine di tracciabilità
+   Sistema di stile per tutte le pagine di tracciabilità.
+   Tokens come da theme.css — nessun colore hardcoded.
    ========================================================= */
-
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500&display=swap');
-
-
-/* --- Variabili --- */
-:root {
-  --color-primary: #007bff;
-  --color-primary-dark: #0056b3;
-  --color-success: #4caf50;
-  --color-success-light: #e8f5e9;
-  --color-success-border: #c8e6c9;
-  --color-success-dark: #388e3c;
-  --color-danger: #dc3545;
-  --color-warning: #ff9800;
-  --color-edit: #1976d2;
-  --color-edit-light: #f0f7ff;
-  --color-edit-border: #90caf9;
-  --color-bg: #f9f9f9;
-  --color-bg-card: #fafafa;
-  --color-border: #ddd;
-  --color-border-light: #e0e0e0;
-  --color-text: #222;
-  --color-text-muted: #666;
-  --color-text-faint: #aaa;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --color-bg-hover: #f0f0f0;
-}
 
 /* =========================================================
    LAYOUT BASE
@@ -42,42 +12,43 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 24px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background-color: var(--color-bg);
+  background-color: var(--bg-base);
 }
 
 .form-container h2 {
-  color: var(--color-text);
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 8px;
 }
 
 .form-container h3 {
-  color: var(--color-text);
+  color: var(--text-primary);
   margin: 20px 0 12px 0;
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--color-border-light);
+  border-bottom: 2px solid var(--border-light);
   padding-bottom: 6px;
 }
 
 .page-subtitle {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   text-align: center;
   margin-bottom: 24px;
   font-size: 0.9rem;
 }
 
 h1 {
-  color: black;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
   text-align: center;
   margin-bottom: 20px;
 }
 
 h2 {
-  color: black;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 20px;
 }
@@ -87,21 +58,20 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: none;
-  border: 1px solid var(--color-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   font-size: 0.88rem;
   font-weight: 500;
   padding: 7px 14px;
   margin-bottom: 1.25rem;
   transition: all 0.15s;
-  background-color: #fff;
 }
 
 .back-button:hover {
-  background-color: var(--color-bg-hover);
+  background-color: var(--bg-hover);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
@@ -115,7 +85,7 @@ h2 {
    ========================================================= */
 
 label {
-  color: black;
+  color: var(--text-primary);
   display: block;
   margin-bottom: 10px;
 }
@@ -130,10 +100,10 @@ select {
   padding: 8px;
   margin: 5px 0 10px 0;
   box-sizing: border-box;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background-color: #fff;
-  color: var(--color-text);
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }
 
 input[type="range"] {
@@ -152,7 +122,6 @@ input[type="range"] {
   margin-top: 20px;
 }
 
-/* Griglia navigazione per ManageLot — 4 colonne su desktop, 2 su mobile */
 .button-container-nav {
   display: grid;
   gap: 16px;
@@ -185,7 +154,8 @@ input[type="range"] {
 }
 
 .action-button:disabled {
-  background-color: #ccc;
+  background-color: var(--border);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -206,11 +176,10 @@ input[type="range"] {
 }
 
 .finish-button.disabled {
-  background-color: #ccc;
+  background-color: var(--border);
   cursor: not-allowed;
   pointer-events: none;
 }
-
 
 /* =========================================================
    TABELLE
@@ -224,25 +193,25 @@ table {
 
 th,
 td {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   padding: 10px;
   text-align: left;
-  color: black;
+  color: var(--text-primary);
 }
 
 th {
-  background-color: #f2f2f2;
+  background-color: var(--bg-elevated);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .trace-table tbody tr:hover {
-  background-color: #f5f5f5;
+  background-color: var(--bg-hover);
 }
 
 /* =========================================================
-   CARDS GRIGLIA — contenitore
+   CARDS GRIGLIA
    ========================================================= */
 
 .card-container {
@@ -251,18 +220,17 @@ th {
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
 }
 
-/* Cards generiche (Traceability overview) */
 .card {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   padding: 20px;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  background-color: #fff;
+  background-color: var(--bg-surface);
   overflow: hidden;
 }
 
 .card h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.1rem;
   font-weight: 700;
   text-align: left;
@@ -270,29 +238,12 @@ th {
   letter-spacing: 0.02em;
 }
 
-.card-nuovi-lotti h2 {
-  color: #66bb6a;
-}
-
-.card-patios h2 {
-  color: #42a5f5;
-}
-
-.card-dryer h2 {
-  color: #ffa726;
-}
-
-.card-fermentazioni h2 {
-  color: #9c27b0;
-}
-
-.card-rest h2 {
-  color: #26a69a;
-}
-
-.card-stocking h2 {
-  color: #8d6e63;
-}
+.card-nuovi-lotti h2 { color: #66bb6a; }
+.card-patios h2      { color: #42a5f5; }
+.card-dryer h2       { color: #ffa726; }
+.card-fermentazioni h2 { color: #9c27b0; }
+.card-rest h2        { color: #26a69a; }
+.card-stocking h2    { color: #8d6e63; }
 
 .card table {
   margin: 0;
@@ -302,7 +253,7 @@ th {
 .card th {
   font-size: 0.75rem;
   padding: 6px 8px;
-  background-color: #f5f5f5;
+  background-color: var(--bg-elevated);
   white-space: nowrap;
 }
 
@@ -329,20 +280,9 @@ th {
   font-weight: 600;
 }
 
-.lots-status-active {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.lots-status-finished {
-  background-color: #f5f5f5;
-  color: #9e9e9e;
-}
-
-.lots-status-partial {
-  background-color: #fff3e0;
-  color: #e65100;
-}
+.lots-status-active   { background-color: #e8f5e9; color: #2e7d32; }
+.lots-status-finished { background-color: #f5f5f5; color: #9e9e9e; }
+.lots-status-partial  { background-color: #fff3e0; color: #e65100; }
 
 .lots-archived-header {
   display: flex;
@@ -350,12 +290,12 @@ th {
   gap: 8px;
   cursor: pointer;
   user-select: none;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 600;
   padding: 10px 0 8px;
   margin-top: 2rem;
-  border-top: 2px dashed var(--color-border-light);
+  border-top: 2px dashed var(--border-light);
   letter-spacing: 0.05em;
 }
 
@@ -378,43 +318,16 @@ th {
   font-weight: 600;
 }
 
-.type-cd {
-  background-color: #fff8e1;
-  color: #f57f17;
-}
-
-.type-natural {
-  background-color: #fce4ec;
-  color: #c62828;
-}
-
-.type-green {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.type-dry {
-  background-color: #efebe9;
-  color: #4e342e;
-}
-
-.type-bigdry {
-  background-color: #ffe0b2;
-  color: #bf360c;
-}
-
-.type-cdgreen {
-  background-color: #e0f2f1;
-  color: #00695c;
-}
-
-.type-washednnatural {
-  background-color: #fce4ec;
-  color: #880e4f;
-}
+.type-cd          { background-color: #fff8e1; color: #f57f17; }
+.type-natural     { background-color: #fce4ec; color: #c62828; }
+.type-green       { background-color: #e8f5e9; color: #2e7d32; }
+.type-dry         { background-color: #efebe9; color: #4e342e; }
+.type-bigdry      { background-color: #ffe0b2; color: #bf360c; }
+.type-cdgreen     { background-color: #e0f2f1; color: #00695c; }
+.type-washednnatural { background-color: #fce4ec; color: #880e4f; }
 
 /* =========================================================
-   TULHA / LOT CARDS — Cleaning, Stocking ecc.
+   TULHA / LOT CARDS
    ========================================================= */
 
 .tulha-grid {
@@ -427,10 +340,10 @@ th {
 .tulha-card {
   flex: 1 1 280px;
   max-width: 380px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1rem;
-  background-color: var(--color-bg-card);
+  background-color: var(--bg-surface);
   box-shadow: var(--shadow-sm);
   transition: border 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
@@ -447,7 +360,6 @@ th {
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
 }
 
-/* Header della card */
 .tulha-card-header {
   display: flex;
   align-items: flex-start;
@@ -467,19 +379,19 @@ th {
 .tulha-card-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--text-primary);
 }
 
 .tulha-card-meta {
   font-size: 0.82rem;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
 .tulha-card-volume {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--text-primary);
   margin-top: 2px;
 }
 
@@ -491,20 +403,12 @@ th {
   font-weight: 600;
 }
 
-.badge-deposit {
-  background-color: #e3f2fd;
-  color: #1565c0;
-}
+.badge-deposit { background-color: #e3f2fd; color: #1565c0; }
+.badge-direct  { background-color: #f3e5f5; color: #6a1b9a; }
 
-.badge-direct {
-  background-color: #f3e5f5;
-  color: #6a1b9a;
-}
-
-/* Separatore interno card */
 .card-divider {
   border: none;
-  border-top: 1px solid var(--color-border-light);
+  border-top: 1px solid var(--border-light);
   margin: 0.6rem 0;
 }
 
@@ -522,7 +426,7 @@ th {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #efefef;
+  background-color: var(--bg-elevated);
   border-radius: var(--radius-sm);
   padding: 0.3rem 0.6rem;
   font-size: 0.82rem;
@@ -534,42 +438,40 @@ th {
 }
 
 .sublot-date {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   min-width: 70px;
 }
 
 .sublot-type {
   font-weight: 600;
-  color: var(--color-text);
-  background-color: #ddd;
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
   border-radius: 3px;
   padding: 0.1rem 0.4rem;
   font-size: 0.78rem;
 }
 
 .sublot-volume {
-  color: #444;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .sublot-nlot {
-  color: var(--color-text-faint);
+  color: var(--text-faint);
   font-style: italic;
   font-size: 0.75rem;
 }
 
-
-/* Sublot stati FIFO durante cleaning */
 .sublot-row.consumed {
-  background-color: #d0d0d0;
+  background-color: var(--border);
   opacity: 0.55;
   text-decoration: line-through;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .sublot-row.consumed .sublot-type {
-  background-color: #bbb;
-  color: #666;
+  background-color: var(--border-light);
+  color: var(--text-muted);
 }
 
 .sublot-row.partial {
@@ -593,7 +495,7 @@ th {
 }
 
 .slider-label strong {
-  color: var(--color-text);
+  color: var(--text-primary);
 }
 
 .slider-value {
@@ -616,7 +518,7 @@ th {
   background-color: var(--color-success-light);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-success-border);
-  color: #1b5e20;
+  color: var(--color-success-dark);
   font-size: 0.95rem;
 }
 
@@ -637,7 +539,7 @@ th {
   justify-content: space-between;
   align-items: center;
   padding: 0.35rem 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
   font-size: 0.88rem;
 }
 
@@ -646,28 +548,29 @@ th {
 }
 
 .info-label {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .info-value {
-  color: var(--color-text);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .info-value.empty {
-  color: var(--color-text-faint);
+  color: var(--text-faint);
   font-style: italic;
   font-weight: 400;
 }
 
-/* Input inline nelle info-row (modalità editing) */
 .info-input {
   width: 90px;
   padding: 0.2rem 0.4rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-edit-border);
   font-size: 0.85rem;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .info-select {
@@ -675,6 +578,8 @@ th {
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-edit-border);
   font-size: 0.85rem;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }
 
 /* =========================================================
@@ -696,13 +601,13 @@ th {
 }
 
 /* =========================================================
-   LOT RANGES (slider sezione)
+   LOT RANGES
    ========================================================= */
 
 .lot-ranges {
   margin-top: 0.5rem;
   padding: 1.5rem;
-  background-color: var(--color-bg);
+  background-color: var(--bg-base);
   border-radius: var(--radius-lg);
 }
 
@@ -726,20 +631,20 @@ th {
 }
 
 .modal-content {
-  background-color: var(--color-bg);
+  background-color: var(--bg-surface);
   margin: 15% auto;
   padding: 20px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   width: 80%;
   max-width: 600px;
   box-shadow: var(--shadow-md);
-  color: black;
+  color: var(--text-primary);
 }
 
 .modal-header {
   padding: 10px;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .modal-body {
@@ -748,7 +653,7 @@ th {
 
 .modal-footer {
   padding: 10px;
-  border-top: 1px solid var(--color-border-light);
+  border-top: 1px solid var(--border-light);
   text-align: right;
 }
 
@@ -766,17 +671,9 @@ th {
   font-weight: bold;
 }
 
-.text-muted {
-  color: var(--color-text-muted);
-}
-
-.text-faint {
-  color: var(--color-text-faint);
-}
-
-.text-success {
-  color: var(--color-success-dark);
-}
+.text-muted  { color: var(--text-muted); }
+.text-faint  { color: var(--text-faint); }
+.text-success { color: var(--color-success-dark); }
 
 .empty-state {
   color: var(--color-danger);
@@ -807,7 +704,6 @@ th {
   font-size: 0.95rem;
 }
 
-/* Stocking card header */
 .stocking-card-header {
   margin-bottom: 0.75rem;
 }
@@ -818,13 +714,12 @@ th {
   align-items: center;
 }
 
-/* Titolo sezione dentro card */
 .info-section-title {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   margin: 0.6rem 0 0.2rem 0;
 }
 
@@ -832,32 +727,9 @@ th {
    TRACEABILITY CARDS — colori per tipo
    ========================================================= */
 
-.card-nuovi-lotti {
-  border-top: 3px solid #66bb6a;
-  background-color: #f9fff9;
-}
-
-.card-patios {
-  border-top: 3px solid #42a5f5;
-  background-color: #f5faff;
-}
-
-.card-dryer {
-  border-top: 3px solid #ffa726;
-  background-color: #fffaf5;
-}
-
-.card-fermentazioni {
-  border-top: 3px solid #9c27b0;
-  background-color: #fdf5ff;
-}
-
-.card-rest {
-  border-top: 3px solid #26a69a;
-  background-color: #f5fffd;
-}
-
-.card-stocking {
-  border-top: 3px solid #8d6e63;
-  background-color: #fdf9f7;
-}
+.card-nuovi-lotti   { border-top: 3px solid #66bb6a; }
+.card-patios        { border-top: 3px solid #42a5f5; }
+.card-dryer         { border-top: 3px solid #ffa726; }
+.card-fermentazioni { border-top: 3px solid #9c27b0; }
+.card-rest          { border-top: 3px solid #26a69a; }
+.card-stocking      { border-top: 3px solid #8d6e63; }

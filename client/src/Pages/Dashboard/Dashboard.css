@@ -2,10 +2,12 @@
 
 .dashboard-content {
   transition: margin-left 0.3s ease;
-  margin-top: 60px;       /* altezza navbar */
-  padding: 24px;          /* spazio interno su tutti i lati */
+  margin-top: 60px;
+  padding: 24px;
   box-sizing: border-box;
   min-height: calc(100vh - 60px);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
 }
 
 .dashboard-expanded {
@@ -14,7 +16,7 @@
 }
 
 .dashboard-collapsed {
-  margin-left: 250px;               /* larghezza sidebar aperta */
+  margin-left: 250px;
   width: calc(100% - 250px);
 }
 

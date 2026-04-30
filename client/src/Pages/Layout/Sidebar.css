@@ -1,78 +1,70 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 60px;
+  width: 250px;
+  height: calc(100% - 60px);
+  background-color: var(--chrome-surface);
+  padding: 5px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s ease, background-color 0.25s ease;
+  transform: translateX(-250px);
+  z-index: 999;
+}
 
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 60px; 
-    width: 250px;
-    height: calc(100% - 60px); 
-    background-color: #282c34;
-    padding: 5px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-    transform: translateX(0);
-    z-index: 999;
-  }
-  
-  .sidebar h3 {
-    
-    margin: 20px;
-    margin-top: 30px;
-    margin-bottom: 30px;
-    color: #ffffff;
-    text-align: left
-  }
-  
-  .sidebar nav ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .sidebar nav ul li {
-    margin: 20px 0;
-  }
-  
-  .sidebar nav ul li a {
-    display: block;
-    padding: 10px 10px;
-    color: #61dafb;
-    text-decoration: none;
-    text-align: left; 
-    margin: 0 10px;
-  }
-  
-  .sidebar nav ul li a:hover {
-    color: #a0bcc7;
-    background-color: #49515f;    
-  }
-  
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar h3 {
+  margin: 30px 20px;
+  color: var(--chrome-text);
+  font-family: var(--font-heading);
+  text-align: left;
+}
+
+.sidebar nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar nav ul li {
+  margin: 20px 0;
+}
+
+.sidebar nav ul li a {
+  display: block;
+  padding: 10px;
+  color: var(--chrome-link);
+  text-decoration: none;
+  text-align: left;
+  margin: 0 10px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.sidebar nav ul li a:hover {
+  color: var(--chrome-link-hover);
+  background-color: var(--chrome-hover-bg);
+}
+
+.burger-menu {
+  display: block;
+  cursor: pointer;
+  font-size: 30px;
+  padding: 10px;
+  background-color: var(--chrome-bg);
+  color: var(--chrome-text);
+  position: fixed;
+  top: 6px;
+  left: 10px;
+  z-index: 1001;
+}
+
+@media (max-width: 768px) {
   .burger-menu {
-    display: block;
-    cursor: pointer;
-    font-size: 30px;
-    padding: 10px;
-    background-color: #1e1e1e;
-    color: #ffffff;
-    position: fixed;
-    top: 6px;
-    left: 10px;
-    z-index: 1001;
+    font-size: 25px;
+    top: 5px;
   }
-  
-  .sidebar {
-    transform: translateX(-250px);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-  
-  @media (max-width: 768px) {
-    .burger-menu {
-      font-size: 25px;
-      top: 5px;
-    }
-  
-    
-  }
-  
+}

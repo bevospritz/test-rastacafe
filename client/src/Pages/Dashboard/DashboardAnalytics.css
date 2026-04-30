@@ -1,16 +1,13 @@
 /* =========================================================
    DashboardAnalytics.css
-   Stile dashboard produzione caffè
    ========================================================= */
-
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500&display=swap');
 
 .dash-root {
   padding: 0;
   min-height: 100vh;
-  background-color: #faf8f5;
-  font-family: 'Inter', sans-serif;
-  color: #2c1810;
+  background-color: var(--bg-base);
+  font-family: var(--font-body);
+  color: var(--text-primary);
 }
 
 /* ── Header ── */
@@ -19,25 +16,25 @@
   justify-content: space-between;
   align-items: flex-end;
   padding: 28px 32px 20px;
-  border-bottom: 1px solid #e8ddd4;
-  background: linear-gradient(135deg, #2c1810 0%, #5c3317 100%);
-  color: #fff;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(135deg, var(--chrome-bg) 0%, var(--chrome-surface) 100%);
+  color: var(--chrome-text);
   flex-wrap: wrap;
   gap: 1rem;
 }
 
 .dash-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-heading);
   font-size: 2rem;
   font-weight: 700;
   margin: 0;
-  color: #f5e6d3;
+  color: var(--brand-pale);
   letter-spacing: -0.02em;
 }
 
 .dash-subtitle {
   font-size: 0.85rem;
-  color: #c4a882;
+  color: var(--brand-accent);
   margin: 4px 0 0;
   font-weight: 300;
   letter-spacing: 0.05em;
@@ -56,17 +53,17 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #c4a882;
+  color: var(--brand-accent);
   font-weight: 500;
 }
 
 .plot-selector {
-  background-color: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: #f5e6d3;
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--brand-pale);
   padding: 8px 14px;
-  border-radius: 8px;
-  font-family: 'Inter', sans-serif;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
   font-size: 0.9rem;
   cursor: pointer;
   min-width: 220px;
@@ -75,12 +72,12 @@
 }
 
 .plot-selector:hover {
-  background-color: rgba(255,255,255,0.2);
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .plot-selector option {
-  background-color: #2c1810;
-  color: #f5e6d3;
+  background-color: var(--chrome-bg);
+  color: var(--brand-pale);
 }
 
 /* ── Info bar appezzamento ── */
@@ -88,15 +85,15 @@
   display: flex;
   gap: 24px;
   padding: 12px 32px;
-  background-color: #f0e8de;
-  border-bottom: 1px solid #e0d0c0;
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-light);
   font-size: 0.83rem;
-  color: #5c3317;
+  color: var(--text-secondary);
   flex-wrap: wrap;
 }
 
 .plot-info-bar strong {
-  color: #2c1810;
+  color: var(--text-primary);
 }
 
 /* ── KPI Grid ── */
@@ -108,29 +105,31 @@
 }
 
 .kpi-card {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
   padding: 20px 20px 16px;
-  box-shadow: 0 2px 8px rgba(44,24,16,0.07);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(44,24,16,0.12);
+  box-shadow: var(--shadow-md);
 }
 
 .kpi-value {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-heading);
   font-size: 2rem;
   font-weight: 700;
   line-height: 1;
   margin-bottom: 4px;
+  color: var(--brand);
 }
 
 .kpi-unit {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted);
   margin-bottom: 6px;
   font-weight: 500;
   text-transform: uppercase;
@@ -139,13 +138,13 @@
 
 .kpi-label {
   font-size: 0.85rem;
-  color: #2c1810;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .kpi-sub {
   font-size: 0.75rem;
-  color: #aaa;
+  color: var(--text-faint);
   margin-top: 4px;
 }
 
@@ -158,10 +157,11 @@
 }
 
 .chart-card {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(44,24,16,0.07);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
 }
 
 .chart-card.chart-wide {
@@ -173,23 +173,23 @@
 }
 
 .chart-title {
-  font-family: 'Syne', sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.05rem;
   font-weight: 600;
-  color: #2c1810;
+  color: var(--text-primary);
   margin: 0 0 4px;
 }
 
 .chart-desc {
   font-size: 0.78rem;
-  color: #999;
+  color: var(--text-faint);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .chart-empty {
-  color: #bbb;
+  color: var(--text-faint);
   font-size: 0.85rem;
   text-align: center;
   padding: 3rem 0;
@@ -198,19 +198,19 @@
 
 /* ── Tooltip ── */
 .chart-tooltip {
-  background: #2c1810;
+  background: var(--chrome-bg);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   font-size: 0.82rem;
-  color: #f5e6d3;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  color: var(--brand-pale);
+  box-shadow: var(--shadow-md);
 }
 
 .tooltip-label {
   font-weight: 600;
   margin-bottom: 4px;
-  color: #c4a882;
+  color: var(--brand-accent);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -222,14 +222,14 @@
   flex-direction: column;
   align-items: center;
   padding: 4rem;
-  color: #8b6343;
+  color: var(--text-muted);
 }
 
 .loading-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #e8ddd4;
-  border-top-color: #8b6343;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--brand-light);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
@@ -243,7 +243,7 @@
 .dash-empty {
   text-align: center;
   padding: 4rem;
-  color: #aaa;
+  color: var(--text-faint);
   font-style: italic;
 }
 
