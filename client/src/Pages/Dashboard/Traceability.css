@@ -14,7 +14,8 @@
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background-color: var(--bg-base);
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-container h2 {
@@ -97,13 +98,24 @@ input[type="number"],
 input[type="range"],
 select {
   width: 100%;
-  padding: 8px;
+  padding: 8px 10px;
   margin: 5px 0 10px 0;
   box-sizing: border-box;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  background-color: var(--bg-input);
+  background-color: var(--bg-elevated);
   color: var(--text-primary);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="number"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--brand-light);
+  background-color: var(--bg-surface);
 }
 
 input[type="range"] {
