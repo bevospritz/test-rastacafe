@@ -31,6 +31,7 @@
   --radius-lg: 12px;
   --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --color-bg-hover: #f0f0f0;
 }
 
 /* =========================================================

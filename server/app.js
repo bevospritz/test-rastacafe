@@ -5,7 +5,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import sessionMiddleware from "./middleware/session.js";
-import connection from "./db.js";
+import pool from "./db.js";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import multer from "multer";
@@ -16,27 +16,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware per il parsing del body delle richieste
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  }),
-);
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3000";
 
-app.options("*", cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+app.options("*", cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 
 // Configurazione della sessione
 app.use(sessionMiddleware);
-
-app.use((req, res, next) => {
-  if (req.session) {
-    // console.log("Session:", req.session);
-  } else {
-    console.log("No session");
-  }
-  next();
-});
 
 // Servire i file statici della app React
 const __filename = fileURLToPath(import.meta.url);
@@ -71,7 +58,7 @@ app.post("/register", async (req, res) => {
 
   try {
     // Check email
-    const [byEmail] = await connection.execute(
+    const [byEmail] = await pool.execute(
       "SELECT * FROM users WHERE email = ?",
       [email],
     );
@@ -80,7 +67,7 @@ app.post("/register", async (req, res) => {
     }
 
     // Check username
-    const [byUsername] = await connection.execute(
+    const [byUsername] = await pool.execute(
       "SELECT * FROM users WHERE username = ?",
       [username],
     );
@@ -89,7 +76,7 @@ app.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await connection.execute(
+    await pool.execute(
       "INSERT INTO users (email, password, role, username) VALUES (?, ?, ?, ?)",
       [email, hashedPassword, role, username],
     );
@@ -106,7 +93,7 @@ app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const [rows] = await connection.execute(
+    const [rows] = await pool.execute(
       "SELECT * FROM users WHERE email = ?",
       [email],
     );
@@ -124,7 +111,6 @@ app.post("/login", async (req, res) => {
           console.error("Errore salvataggio sessione:", err);
           return res.status(500).json({ message: "Server error" });
         }
-        console.log("Session saved:", req.session);
         res.status(200).json({ message: "Login successful", user });
       });
     } else {
@@ -139,18 +125,15 @@ app.post("/login", async (req, res) => {
 // Endpoint per il logout
 app.post("/logout", (req, res) => {
   if (req.session.user) {
-    console.log("Logging out user:", req.session.user);
     req.session.destroy((err) => {
       if (err) {
         console.error("Errore durante il logout:", err);
         return res.status(500).send({ message: "Errore durante il logout" });
       }
-      res.clearCookie("connect.sid"); // Cancella il cookie di sessione
-      console.log("Logout effettuato con successo");
+      res.clearCookie("connect.sid");
       res.status(200).send({ message: "Logout effettuato con successo" });
     });
   } else {
-    console.log("Nessuna sessione attiva");
     res.status(400).send({ message: "Nessuna sessione attiva" });
   }
 });
@@ -161,7 +144,7 @@ app.use("/api", requireAuth);
 // Endpoint per ottenere le fattorie
 app.get("/api/farm", async (req, res) => {
   try {
-    const [results] = await connection.query("SELECT * FROM farm");
+    const [results] = await pool.query("SELECT * FROM farm");
     res.status(200).json(results);
   } catch (err) {
     console.error("Error fetching data:", err);
@@ -172,7 +155,7 @@ app.get("/api/farm", async (req, res) => {
 // Endpoint per ottenere gli elementi della farm
 app.get("/api/elements", async (req, res) => {
   try {
-    const [results] = await connection.query("SELECT * FROM elements");
+    const [results] = await pool.query("SELECT * FROM elements");
     res.status(200).json(results);
   } catch (err) {
     console.error("Error fetching data:", err);
@@ -183,7 +166,7 @@ app.get("/api/elements", async (req, res) => {
 // Endpoint per ottenere i plots della farm
 app.get("/api/plots", async (req, res) => {
   try {
-    const [results] = await connection.query("SELECT * FROM plots");
+    const [results] = await pool.query("SELECT * FROM plots");
     res.status(200).json(results);
   } catch (err) {
     console.error("Error fetching data:", err);
@@ -195,7 +178,7 @@ app.get("/api/plots", async (req, res) => {
 app.get("/api/farm/:id/stats", async (req, res) => {
   const { id } = req.params;
   try {
-    const [rows] = await connection.query(
+    const [rows] = await pool.query(
       `SELECT 
         COUNT(*) AS nPlots,
         COALESCE(SUM(surface), 0) AS totalSurface,
@@ -214,7 +197,7 @@ app.patch("/api/farm/:id", async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   try {
-    await connection.query("UPDATE farm SET name = ? WHERE id = ?", [name, id]);
+    await pool.query("UPDATE farm SET name = ? WHERE id = ?", [name, id]);
     res.json({ message: "Farm aggiornata" });
   } catch (err) {
     res.status(500).json({ error: "Errore server" });
@@ -224,7 +207,7 @@ app.patch("/api/farm/:id", async (req, res) => {
 // Endpoint per ottenere gli utenti
 app.get("/api/users", async (req, res) => {
   try {
-    const [results] = await connection.query("SELECT * FROM users");
+    const [results] = await pool.query("SELECT * FROM users");
     res.status(200).json(results);
   } catch (err) {
     console.error("Error fetching data:", err);
@@ -236,7 +219,7 @@ app.get("/api/users", async (req, res) => {
 app.post("/api/farm", async (req, res) => {
   const { name } = req.body;
   try {
-    const [result] = await connection.query(
+    const [result] = await pool.query(
       "INSERT INTO farm (name) VALUES (?)",
       [name],
     );
@@ -250,119 +233,110 @@ app.post("/api/farm", async (req, res) => {
 // Endpoint per eliminare una farm e i relativi elementi
 app.delete("/api/farm/:id", async (req, res) => {
   const { id } = req.params;
+  let txConn;
   try {
-    // Inizia una transazione
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Elimina gli elementi collegati alla farm
-    await connection.query("DELETE FROM elementi WHERE farmId = ?", [id]);
+    await txConn.query("DELETE FROM elementi WHERE farmId = ?", [id]);
+    await txConn.query("DELETE FROM plots WHERE farmId = ?", [id]);
+    await txConn.query("DELETE FROM farm WHERE id = ?", [id]);
 
-    // Elimina i plots collegati alla farm
-    await connection.query("DELETE FROM plots WHERE farmId = ?", [id]);
-
-    // Elimina la farm
-    await connection.query("DELETE FROM farm WHERE id = ?", [id]);
-
-    // Conferma la transazione
-    await connection.commit();
-
+    await txConn.commit();
     res.status(200).send("Farm e relativi elementi eliminati con successo");
   } catch (err) {
-    // In caso di errore, annulla la transazione
-    await connection.rollback();
-
+    if (txConn) await txConn.rollback();
     console.error("Error deleting farm and its elements:", err);
     res
       .status(500)
       .send("Errore durante l'eliminazione della farm e dei suoi elementi");
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
 // Endpoint per eliminare una elemento della struttura
 app.delete("/api/elements/:id", async (req, res) => {
   const { id } = req.params;
+  let txConn;
   try {
-    // Inizia una transazione
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Elimina l'elemento specifico dal database usando il suo id
-    const [result] = await connection.query(
+    const [result] = await txConn.query(
       "DELETE FROM elements WHERE id = ?",
       [id],
     );
 
-    // Verifica se l'elemento è stato eliminato
     if (result.affectedRows === 0) {
-      // Se non c'è nessun elemento con l'id specificato
-      await connection.rollback(); // Rollback della transazione in caso di errore
+      await txConn.rollback();
       return res.status(404).send("Element non trovato");
     }
 
-    // Commit della transazione se l'elemento è stato eliminato correttamente
-    await connection.commit();
+    await txConn.commit();
     res.status(200).send("Element eliminato con successo");
   } catch (err) {
-    await connection.rollback(); // Rollback della transazione in caso di errore
+    if (txConn) await txConn.rollback();
     console.error("Error deleting element:", err);
     res.status(500).send("Errore durante l'eliminazione dell'elemento");
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
 // Endpoint per eliminare un plot della farm
 app.delete("/api/plots/:id", async (req, res) => {
   const { id } = req.params;
+  let txConn;
   try {
-    // Inizia una transazione
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Elimina il plot specifico dal database usando il suo id
-    const [result] = await connection.query("DELETE FROM plots WHERE id = ?", [
+    const [result] = await txConn.query("DELETE FROM plots WHERE id = ?", [
       id,
     ]);
 
-    // Verifica se il plot è stato eliminato
     if (result.affectedRows === 0) {
-      // Se non c'è nessun plot con l'id specificato
-      await connection.rollback(); // Rollback della transazione in caso di errore
+      await txConn.rollback();
       return res.status(404).send("Element non trovato");
     }
 
-    // Commit della transazione se il plot è stato eliminato correttamente
-    await connection.commit();
+    await txConn.commit();
     res.status(200).send("Plot eliminato con successo");
   } catch (err) {
-    await connection.rollback(); // Rollback della transazione in caso di errore
+    if (txConn) await txConn.rollback();
     console.error("Error deleting plot:", err);
     res.status(500).send("Errore durante l'eliminazione del plot");
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
 // Endpoint per eliminare uno user
 app.delete("/api/users/:id", async (req, res) => {
   const { id } = req.params;
+  let txConn;
   try {
-    // Inizia una transazione
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Elimina l'elemento specifico dal database usando il suo id
-    const [result] = await connection.query("DELETE FROM users WHERE id = ?", [
+    const [result] = await txConn.query("DELETE FROM users WHERE id = ?", [
       id,
     ]);
 
-    // Verifica se lo user è stato eliminato
     if (result.affectedRows === 0) {
-      // Se non c'è nessun user con l'id specificato
-      await connection.rollback(); // Rollback della transazione in caso di errore
+      await txConn.rollback();
       return res.status(404).send("User non trovato");
     }
 
-    // Commit della transazione se lo user è stato eliminato correttamente
-    await connection.commit();
+    await txConn.commit();
     res.status(200).send("User eliminato con successo");
   } catch (err) {
-    await connection.rollback(); // Rollback della transazione in caso di errore
+    if (txConn) await txConn.rollback();
     console.error("Error deleting user:", err);
     res.status(500).send("Errore durante l'eliminazione dello user");
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -370,7 +344,7 @@ app.delete("/api/users/:id", async (req, res) => {
 app.post("/api/elements", async (req, res) => {
   const { element, name, notes, farmId } = req.body;
   try {
-    const [result] = await connection.query(
+    const [result] = await pool.query(
       "INSERT INTO elements (element, name, notes, farmId) VALUES (?, ?, ?, ?)",
       [element, name, notes, farmId],
     );
@@ -397,10 +371,8 @@ app.post("/api/plots", async (req, res) => {
     farmId,
   } = req.body;
 
-  console.log("Dati ricevuti dal client:", req.body);
-
   try {
-    const [result] = await connection.query(
+    const [result] = await pool.query(
       "INSERT INTO plots (name, codename, variety, ncovas, distance, surface, age, state, irrigation, renda_forecast, farmId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         name,
@@ -416,8 +388,6 @@ app.post("/api/plots", async (req, res) => {
         farmId,
       ],
     );
-
-    console.log("Risultato dell'inserimento nel database:", result);
 
     res.status(201).json({
       id: result.insertId,
@@ -444,7 +414,7 @@ app.patch("/api/plots/:id", async (req, res) => {
   const { id } = req.params;
   const { state, irrigation, renda_forecast } = req.body;
   try {
-    await connection.query(
+    await pool.query(
       "UPDATE plots SET state = ?, irrigation = ?, renda_forecast = ? WHERE id = ?",
       [state || null, irrigation || null, renda_forecast || null, id],
     );
@@ -460,7 +430,7 @@ app.patch("/api/elements/:id", async (req, res) => {
   const { id } = req.params;
   const { name, notes } = req.body;
   try {
-    await connection.query(
+    await pool.query(
       "UPDATE elements SET name = ?, notes = ? WHERE id = ?",
       [name, notes || null, id],
     );
@@ -492,8 +462,6 @@ app.post("/api/excelplots", upload.single("file"), async (req, res) => {
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(sheet);
-
-    console.log("Righe importate:", rows.length);
 
     // Validazione base: almeno una riga e colonne necessarie
     const requiredFields = [
@@ -537,7 +505,7 @@ app.post("/api/excelplots", upload.single("file"), async (req, res) => {
         renda_forecast = null,
       } = row;
 
-      await connection.query(
+      await pool.query(
         `INSERT INTO plots 
          (name, codename, variety, ncovas, distance, surface, age, state, irrigation, renda_forecast, farmId)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -579,7 +547,7 @@ app.post("/api/newlot", async (req, res) => {
     "INSERT INTO newlot (plot, volume, date, method, type, worked, newlot_nLot) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
   try {
-    const [lastNlotResult] = await connection.query(getLastNlotQuery);
+    const [lastNlotResult] = await pool.query(getLastNlotQuery);
     let lastNlot;
 
     if (lastNlotResult.length === 0) {
@@ -594,9 +562,7 @@ app.post("/api/newlot", async (req, res) => {
     const newWorked = 0;
 
     const values = [plot, volume, date, method, type, newWorked, newNlot];
-    const [result] = await connection.query(insertNewLotQuery, values);
-
-    console.log("Risultato dell'inserimento:", result);
+    const [result] = await pool.query(insertNewLotQuery, values);
 
     res.status(201).json({
       id: result.insertId,
@@ -620,7 +586,7 @@ app.get("/api/newlot", async (req, res) => {
     "SELECT id, date, plot, volume, method, type, worked, newlot_nLot FROM newlot WHERE worked = 0 ORDER BY date DESC";
 
   try {
-    const [results] = await connection.query(sql);
+    const [results] = await pool.query(sql);
     res.json(results);
   } catch (err) {
     console.error("Errore nel recupero dei nuovi lotti:", err);
@@ -632,7 +598,7 @@ app.get("/api/newlot", async (req, res) => {
 // Endpoint per ottenere i dati del patio e i plot da newlot
 app.get("/api/patiocard", async (req, res) => {
   try {
-    const [results] = await connection.query(
+    const [results] = await pool.query(
       `SELECT 
   p.id,
   p.date,
@@ -678,7 +644,7 @@ app.get("/api/dryercard", async (req, res) => {
       WHERE d.status != 'finished'
       GROUP BY d.id;
     `;
-    const [results] = await connection.query(query);
+    const [results] = await pool.query(query);
     res.status(200).json(results);
   } catch (err) {
     console.error("Errore nella route /api/dryercard:", err);
@@ -706,7 +672,7 @@ app.get("/api/fermentationcard", async (req, res) => {
       WHERE f.worked = 0
       GROUP BY f.id;
     `;
-    const [results] = await connection.query(query);
+    const [results] = await pool.query(query);
     res.status(200).json(results);
   } catch (err) {
     console.error("Errore /api/fermentationcard:", err);
@@ -736,7 +702,7 @@ app.get("/api/restcard", async (req, res) => {
       WHERE r.status != 'finished'
       GROUP BY r.id;
     `;
-    const [results] = await connection.query(query);
+    const [results] = await pool.query(query);
     res.status(200).json(results);
   } catch (err) {
     console.error("Errore /api/restcard:", err);
@@ -770,7 +736,7 @@ app.get("/api/stockingcard", async (req, res) => {
       GROUP BY c.id, c.date, c.cleaning_nLot, c.bags, c.deposit
       ORDER BY c.date DESC;
     `;
-    const [results] = await connection.query(query);
+    const [results] = await pool.query(query);
     res.status(200).json(results);
   } catch (err) {
     console.error("Errore /api/stockingcard:", err);
@@ -832,7 +798,7 @@ app.get("/api/lots/:type", async (req, res) => {
   if (!queries[type]) return res.status(400).json({ error: "Tipo non valido" });
 
   try {
-    const [rows] = await connection.query(queries[type]);
+    const [rows] = await pool.query(queries[type]);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Errore server" });
@@ -847,50 +813,50 @@ app.get("/api/can-delete/:type/:nLot", async (req, res) => {
     let childType = null;
 
     if (type === "newlot") {
-      const [r] = await connection.query(
+      const [r] = await pool.query(
         "SELECT COUNT(*) as n FROM patio_prevnlot WHERE prev_nLot_newlot = ?",
         [nLot],
       );
       hasChildren = r[0].n > 0;
       childType = "patio";
     } else if (type === "patio") {
-      const [r1] = await connection.query(
+      const [r1] = await pool.query(
         "SELECT COUNT(*) as n FROM dryer_prevnlot WHERE prev_nLot_patio = ?",
         [nLot],
       );
-      const [r2] = await connection.query(
+      const [r2] = await pool.query(
         "SELECT COUNT(*) as n FROM fermentation_prevnlot WHERE prev_nLot_patio = ?",
         [nLot],
       );
-      const [r3] = await connection.query(
+      const [r3] = await pool.query(
         "SELECT COUNT(*) as n FROM rest_prevnlot WHERE prev_nLot_patio = ?",
         [nLot],
       );
       hasChildren = r1[0].n > 0 || r2[0].n > 0 || r3[0].n > 0;
       childType = "dryer/fermentation/rest";
     } else if (type === "dryer") {
-      const [r] = await connection.query(
+      const [r] = await pool.query(
         "SELECT COUNT(*) as n FROM rest_prevnlot WHERE prev_nLot_dryer = ?",
         [nLot],
       );
       hasChildren = r[0].n > 0;
       childType = "rest";
     } else if (type === "fermentation") {
-      const [r] = await connection.query(
+      const [r] = await pool.query(
         "SELECT COUNT(*) as n FROM patio_prevnlot_fermentation WHERE prev_nLot_fermentation = ?",
         [nLot],
       );
       hasChildren = r[0].n > 0;
       childType = "patio";
     } else if (type === "rest") {
-      const [r] = await connection.query(
+      const [r] = await pool.query(
         "SELECT COUNT(*) as n FROM cleaning_prevnlot WHERE prev_nLot_rest = ?",
         [nLot],
       );
       hasChildren = r[0].n > 0;
       childType = "cleaning";
     } else if (type === "cleaning") {
-      const [r] = await connection.query(
+      const [r] = await pool.query(
         "SELECT COUNT(*) as n FROM selling_prevnlot WHERE prev_nLot_cleaning = ?",
         [nLot],
       );
@@ -918,7 +884,7 @@ app.delete("/api/lots/:type/:id", async (req, res) => {
   };
   if (!tables[type]) return res.status(400).json({ error: "Tipo non valido" });
   try {
-    await connection.query(`DELETE FROM ${tables[type]} WHERE id = ?`, [id]);
+    await pool.query(`DELETE FROM ${tables[type]} WHERE id = ?`, [id]);
     res.json({ message: "Eliminato con successo" });
   } catch (err) {
     res.status(500).json({ error: "Errore server" });
@@ -964,7 +930,7 @@ app.patch("/api/lots/:type/:id", async (req, res) => {
       .map((k) => `\`${k}\` = ?`)
       .join(", ");
     const values = [...Object.values(updates), id];
-    await connection.query(
+    await pool.query(
       `UPDATE ${tables[type]} SET ${fields} WHERE id = ?`,
       values,
     );
@@ -977,7 +943,7 @@ app.patch("/api/lots/:type/:id", async (req, res) => {
 // Endpoint per ottenere i patii per la dashboard
 app.get("/api/patio", async (req, res) => {
   try {
-    const [results] = await connection.query("SELECT * FROM patio");
+    const [results] = await pool.query("SELECT * FROM patio");
     res.status(200).json(results);
   } catch (err) {
     console.error("Error fetching data:", err);
@@ -988,7 +954,6 @@ app.get("/api/patio", async (req, res) => {
 //Endpoint per aggiungere un nuovo lotto nel patio
 app.post("/api/patio", async (req, res) => {
   const data = req.body;
-  console.log("POST ricevuto:", data);
 
   if (!Array.isArray(data)) {
     return res.status(400).json({ error: "Invalid data format" });
@@ -1000,11 +965,12 @@ app.post("/api/patio", async (req, res) => {
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const selectNewPatioQuery = "SELECT * FROM patio WHERE id = ?";
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Ottenere l'ultimo patio_nLot
-    const [lastNlotResult] = await connection.query(getLastNlotQuery);
+    const [lastNlotResult] = await txConn.query(getLastNlotQuery);
     let lastNlot =
       lastNlotResult.length === 0 ? "P00000" : lastNlotResult[0].patio_nLot;
     let lastNumber = parseInt(lastNlot.substring(1)) + 1;
@@ -1027,7 +993,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       const newNlot = "P" + lastNumber.toString().padStart(5, "0");
       lastNumber++;
 
-      const [result] = await connection.query(insertPatioQuery, [
+      const [result] = await txConn.query(insertPatioQuery, [
         name,
         volume,
         type,
@@ -1040,14 +1006,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         newNlot,
       ]);
 
-      // Dopo aver inserito, recupera il record dal db
-      const [newPatio] = await connection.query(selectNewPatioQuery, [
+      const [newPatio] = await txConn.query(selectNewPatioQuery, [
         result.insertId,
       ]);
       patioRecords.push(newPatio[0]);
     }
 
-    await connection.commit();
+    await txConn.commit();
 
     const patioIds = patioRecords.map((p) => p.id);
 
@@ -1055,27 +1020,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       .status(201)
       .json({ message: "Data inserted successfully", patioRecords, patioIds });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Error inserting data:", err);
     res.status(500).json({ error: "Error inserting data" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
 //Endpoint per modificare il valore worked del lotto
 app.patch("/api/newlot/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(`Richiesta di aggiornamento ricevuta per il lotto con ID: ${id}`);
 
   try {
-    const [result] = await connection.query(
-      "UPDATE newlot SET worked = 1 WHERE id = ?",
-      [id],
-    );
-    console.log(
-      `Risultato dell'aggiornamento per il lotto con ID ${id}:`,
-      result,
-    );
-
+    await pool.query("UPDATE newlot SET worked = 1 WHERE id = ?", [id]);
     res.status(200).json({ message: "Lotto aggiornato con successo" });
   } catch (error) {
     console.error("Errore nell'aggiornamento del lotto:", error);
@@ -1098,7 +1056,7 @@ app.post("/api/patio_prevnlot", async (req, res) => {
       prev_nLot_newlot,
     ]);
 
-    await connection.query(
+    await pool.query(
       "INSERT INTO patio_prevnlot (patio_id, prev_nLot_newlot) VALUES ?",
       [values],
     );
@@ -1118,7 +1076,7 @@ app.patch("/api/patio/update-lots", async (req, res) => {
     for (const lot of lots) {
       const { id, volumeUsed } = lot;
 
-      const [existingRows] = await connection.query(
+      const [existingRows] = await pool.query(
         "SELECT volume, partial_volume, status FROM patio WHERE id = ?",
         [id],
       );
@@ -1131,12 +1089,12 @@ app.patch("/api/patio/update-lots", async (req, res) => {
         const remaining = volume - volumeUsed;
 
         if (remaining > 0) {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET status = ?, partial_volume = ? WHERE id = ?",
             ["split", remaining, id],
           );
         } else {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
             ["finished", id],
           );
@@ -1145,12 +1103,12 @@ app.patch("/api/patio/update-lots", async (req, res) => {
         const remaining = partial_volume - volumeUsed;
 
         if (remaining > 0) {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET partial_volume = ? WHERE id = ?",
             [remaining, id],
           );
         } else {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
             ["finished", id],
           );
@@ -1171,7 +1129,7 @@ app.get("/api/trace/prev-nlot-newlot/:fermentation_nLot", async (req, res) => {
   const fermentation_nLot = req.params.fermentation_nLot;
 
   try {
-    const [result] = await connection.query(
+    const [result] = await pool.query(
       `
       SELECT pprev.prev_nLot_newlot
       FROM fermentation f
@@ -1198,7 +1156,7 @@ app.get("/api/trace/prev-nlot-newlot/:fermentation_nLot", async (req, res) => {
 // Endpoint per ottenere i lotti di fermentazione attivi
 app.get("/api/fermentation/active", async (req, res) => {
   try {
-    const active = await connection.query(
+    const active = await pool.query(
       "SELECT * FROM fermentation WHERE worked = 0",
     );
     res.json(active[0]);
@@ -1216,22 +1174,22 @@ app.post("/api/fermentation", async (req, res) => {
     return res.status(400).json({ message: "Dati incompleti" });
   }
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // 2.1 – genera nuovo fermentation_nlot
-    const [last] = await connection.query(
+    const [last] = await txConn.query(
       "SELECT fermentation_nLot FROM fermentation ORDER BY fermentation_nLot DESC LIMIT 1",
     );
     const lastNlot = last.length === 0 ? "F00000" : last[0].fermentation_nLot;
     const nextNum = parseInt(lastNlot.substring(1)) + 1;
     const newNlot = "F" + nextNum.toString().padStart(5, "0");
 
-    // 2.2 – inserisci il record in `fermentation`
     const insertFermentationSQL = `
       INSERT INTO fermentation (volume, date, type, timeIn, method, fermentation_nLot)
       VALUES (?, ?, ?, ?, ?, ?)`;
-    const [ins] = await connection.query(insertFermentationSQL, [
+    const [ins] = await txConn.query(insertFermentationSQL, [
       volume,
       date,
       type,
@@ -1242,26 +1200,26 @@ app.post("/api/fermentation", async (req, res) => {
 
     const fermentationIds = ins.insertId;
 
-    // 2.3 – per ogni lotto selezionato, inserisci in fermentation_prevnlot
     const insertPrev = `
       INSERT INTO fermentation_prevnLot (fermentation_id, prev_nLot_patio)
       VALUES (?, ?)`;
-    console.log("Lots ricevuti:", lots);
     for (const lot of lots) {
-      await connection.query(insertPrev, [
+      await txConn.query(insertPrev, [
         fermentationIds,
         lot.prev_nLot_patio,
       ]);
     }
 
-    await connection.commit();
+    await txConn.commit();
     res
       .status(201)
       .json({ message: "Data inserted successfully", fermentationIds });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Error inserting data:", err);
     res.status(500).json({ error: err.message, full: err });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -1283,7 +1241,7 @@ app.post("/api/patio_prevnlot_fermentation", async (req, res) => {
       ],
     );
 
-    await connection.query(
+    await pool.query(
       "INSERT INTO patio_prevnlot (patio_id, prev_nLot_newlot, prev_nLot_fermentation) VALUES ?",
       [values],
     );
@@ -1304,7 +1262,7 @@ app.patch("/api/patio/update-lots-fermentation", async (req, res) => {
       const { id, volumeUsed } = lot;
 
       // Recupera il lotto dal database
-      const [existingRows] = await connection.query(
+      const [existingRows] = await pool.query(
         "SELECT volume, partial_volume, status FROM patio WHERE id = ?",
         [id],
       );
@@ -1317,12 +1275,12 @@ app.patch("/api/patio/update-lots-fermentation", async (req, res) => {
         const remaining = volume - volumeUsed;
 
         if (remaining > 0) {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET status = ?, partial_volume = ? WHERE id = ?",
             ["split", remaining, id],
           );
         } else {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
             ["finished", id],
           );
@@ -1331,12 +1289,12 @@ app.patch("/api/patio/update-lots-fermentation", async (req, res) => {
         const remaining = partial_volume - volumeUsed;
 
         if (remaining > 0) {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET partial_volume = ? WHERE id = ?",
             [remaining, id],
           );
         } else {
-          await connection.query(
+          await pool.query(
             "UPDATE patio SET status = ?, partial_volume = NULL WHERE id = ?",
             ["finished", id],
           );
@@ -1364,8 +1322,10 @@ app.patch("/api/fermentation/update-lots", async (req, res) => {
     return res.status(400).json({ error: "Nessun lotto da aggiornare." });
   }
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
     for (const lot of lots) {
       const { id, dateOut, timeOut, worked } = lot;
@@ -1374,7 +1334,7 @@ app.patch("/api/fermentation/update-lots", async (req, res) => {
         throw new Error(`Dati mancanti o malformati per il lotto con ID ${id}`);
       }
 
-      await connection.query(
+      await txConn.query(
         `UPDATE fermentation
          SET dateOut = ?, timeOut = ?, worked = ?
          WHERE id = ?`,
@@ -1382,14 +1342,16 @@ app.patch("/api/fermentation/update-lots", async (req, res) => {
       );
     }
 
-    await connection.commit();
+    await txConn.commit();
     res.status(200).json({ message: "Lotti aggiornati con successo." });
   } catch (error) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Errore durante il PATCH:", error);
     res
       .status(500)
       .json({ error: "Errore durante l'aggiornamento dei lotti." });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -1415,7 +1377,7 @@ app.get("/api/dryer", async (req, res) => {
       LEFT JOIN newlot nl ON pp.prev_nLot_newlot = nl.newlot_nLot
       GROUP BY d.id, d.date, d.dryer, d.volume, d.partial_volume, d.status, d.dryer_nLot;
     `;
-    const [results] = await connection.query(query);
+    const [results] = await pool.query(query);
     res.status(200).json(results);
   } catch (err) {
     console.error("Errore nella route /api/dryer:", err);
@@ -1432,22 +1394,22 @@ app.post("/api/dryer", async (req, res) => {
     return res.status(400).json({ message: "Dati incompleti" });
   }
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // 2.1 – genera nuovo dryer_nlot
-    const [last] = await connection.query(
+    const [last] = await txConn.query(
       "SELECT dryer_nLot FROM dryer ORDER BY dryer_nLot DESC LIMIT 1",
     );
     const lastNlot = last.length === 0 ? "D00000" : last[0].dryer_nLot;
     const nextNum = parseInt(lastNlot.substring(1)) + 1;
     const newNlot = "D" + nextNum.toString().padStart(5, "0");
 
-    // 2.2 – inserisci il record in `dryer`
     const insertDryerSQL = `
       INSERT INTO dryer (dryer, volume, date, timeIn, dryer_nLot)
       VALUES (?, ?, ?, ?, ?)`;
-    const [ins] = await connection.query(insertDryerSQL, [
+    const [ins] = await txConn.query(insertDryerSQL, [
       dryer,
       volume,
       date,
@@ -1457,28 +1419,29 @@ app.post("/api/dryer", async (req, res) => {
 
     const dryerId = ins.insertId;
 
-    // 2.3 – per ogni lotto selezionato, inserisci in dryer_prevnlot
     const insertPrev = `
       INSERT INTO dryer_prevnLot (dryer_id, prev_nLot_patio, volume)
       VALUES (?, ?, ?)`;
     for (const lot of lots) {
-      await connection.query(insertPrev, [
+      await txConn.query(insertPrev, [
         dryerId,
         lot.prev_nLot_patio,
         lot.volume,
       ]);
     }
 
-    await connection.commit();
+    await txConn.commit();
     res.status(201).json({
       message: "Dryer registrato con successo",
       dryerId,
       dryer_nLot: newNlot,
     });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Errore in POST /api/dryer:", err);
     res.status(500).json({ message: "Errore interno" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -1504,7 +1467,7 @@ app.get("/api/rest", async (req, res) => {
       ORDER BY r.date DESC;
     `;
 
-    const [results] = await connection.query(query);
+    const [results] = await pool.query(query);
 
     // normalizziamo fermented
     const normalized = results.map((r) => ({
@@ -1527,11 +1490,12 @@ app.post("/api/rest", async (req, res) => {
     return res.status(400).json({ message: "Dati incompleti" });
   }
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // genera nuovo rest_nLot
-    const [last] = await connection.query(
+    const [last] = await txConn.query(
       "SELECT rest_nLot FROM rest ORDER BY rest_nLot DESC LIMIT 1",
     );
 
@@ -1539,9 +1503,8 @@ app.post("/api/rest", async (req, res) => {
     const nextNum = parseInt(lastNlot.substring(1)) + 1;
     const newNlot = "R" + nextNum.toString().padStart(5, "0");
 
-    // inserimento REST
-    const [ins] = await connection.query(
-      `INSERT INTO rest 
+    const [ins] = await txConn.query(
+      `INSERT INTO rest
        (tulha, volume, date, timeIn, rest_nLot)
        VALUES (?, ?, ?, ?, ?)`,
       [tulha, volume, date, timeIn, newNlot],
@@ -1549,7 +1512,6 @@ app.post("/api/rest", async (req, res) => {
 
     const restId = ins.insertId;
 
-    // inserimento PREV LOT
     const insertPrev = `
       INSERT INTO rest_prevnlot
       (rest_id, prev_nLot_dryer, prev_nLot_patio)
@@ -1560,13 +1522,12 @@ app.post("/api/rest", async (req, res) => {
       const dryer = lot.prev_nLot_dryer || null;
       const patio = lot.prev_nLot_patio || null;
 
-      // 🔒 blocca inserimenti sporchi
       if (!dryer && !patio) continue;
 
-      await connection.query(insertPrev, [restId, dryer, patio]);
+      await txConn.query(insertPrev, [restId, dryer, patio]);
     }
 
-    await connection.commit();
+    await txConn.commit();
 
     res.status(201).json({
       message: "Rest registrato con successo",
@@ -1574,9 +1535,11 @@ app.post("/api/rest", async (req, res) => {
       rest_nLot: newNlot,
     });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Errore POST /api/rest:", err);
     res.status(500).json({ message: "Errore interno" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -1588,15 +1551,15 @@ app.patch("/api/rest/update-lots", async (req, res) => {
     return res.status(400).json({ error: "Nessun lotto da aggiornare." });
   }
 
+  let txConn;
   try {
-    await connection.beginTransaction();
-
-    console.log("LOTS ARRIVATI:", lots);
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
     for (const lot of lots) {
       const { id, volumeUsed } = lot;
 
-      const [rows] = await connection.query(
+      const [rows] = await txConn.query(
         "SELECT volume, partial_volume, status FROM dryer WHERE id = ?",
         [id],
       );
@@ -1609,12 +1572,12 @@ app.patch("/api/rest/update-lots", async (req, res) => {
         const remaining = volume - volumeUsed;
 
         if (remaining > 0) {
-          await connection.query(
+          await txConn.query(
             "UPDATE dryer SET status = ?, partial_volume = ? WHERE id = ?",
             ["split", remaining, id],
           );
         } else {
-          await connection.query(
+          await txConn.query(
             "UPDATE dryer SET status = ?, partial_volume = NULL WHERE id = ?",
             ["finished", id],
           );
@@ -1623,27 +1586,27 @@ app.patch("/api/rest/update-lots", async (req, res) => {
         const remaining = partial_volume - volumeUsed;
 
         if (remaining > 0) {
-          await connection.query(
+          await txConn.query(
             "UPDATE dryer SET partial_volume = ? WHERE id = ?",
             [remaining, id],
           );
         } else {
-          await connection.query(
+          await txConn.query(
             "UPDATE dryer SET status = ?, partial_volume = NULL WHERE id = ?",
             ["finished", id],
           );
         }
-
-        console.log("INSERISCO:", lot);
       }
     }
 
-    await connection.commit();
+    await txConn.commit();
     res.status(200).json({ message: "Lotti aggiornati" });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Errore PATCH /api/rest/update-lots:", err);
     res.status(500).json({ error: "Errore server" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -1677,7 +1640,7 @@ app.get("/api/restforcleaning", async (req, res) => {
       ORDER BY r.tulha, r.date ASC;
     `;
 
-    const [rows] = await connection.query(query);
+    const [rows] = await pool.query(query);
 
     const grouped = {};
     const seenRestIds = {}; // traccia i rest_id già contati per il volume
@@ -1725,7 +1688,7 @@ app.get("/api/restforcleaning", async (req, res) => {
 // GET deposits
 app.get("/api/deposits", async (req, res) => {
   try {
-    const [results] = await connection.query("SELECT * FROM deposits");
+    const [results] = await pool.query("SELECT * FROM deposits");
     res.status(200).json(results);
   } catch (err) {
     res.status(500).send("Errore recupero deposits");
@@ -1736,7 +1699,7 @@ app.get("/api/deposits", async (req, res) => {
 app.post("/api/deposits", async (req, res) => {
   const { name } = req.body;
   try {
-    const [result] = await connection.query(
+    const [result] = await pool.query(
       "INSERT INTO deposits (name) VALUES (?)",
       [name],
     );
@@ -1749,7 +1712,7 @@ app.post("/api/deposits", async (req, res) => {
 // GET ultimo cleaning_nLot cleaning
 app.get("/api/cleaning/last-nlot", async (req, res) => {
   try {
-    const [rows] = await connection.query(
+    const [rows] = await pool.query(
       "SELECT cleaning_nLot FROM cleaning ORDER BY cleaning_nLot DESC LIMIT 1",
     );
     res.json({
@@ -1774,11 +1737,12 @@ app.post("/api/cleaning", async (req, res) => {
     lots,
   } = req.body;
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // 1. Inserisci in cleaning
-    const [ins] = await connection.query(
+    const [ins] = await txConn.query(
       `INSERT INTO cleaning (date, volume, weight, bags, cleaning_nLot, umidity, cata, deposit)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -1794,12 +1758,10 @@ app.post("/api/cleaning", async (req, res) => {
     );
     const cleaningId = ins.insertId;
 
-    // 2. Per ogni tulha, applica FIFO e registra in cleaning_prevnlot
     for (const lot of lots) {
       let remaining = lot.volumeUsed;
 
-      // Recupera i lotti della tulha ordinati FIFO (più vecchio prima)
-      const [tulhaLots] = await connection.query(
+      const [tulhaLots] = await txConn.query(
         `SELECT id, rest_nLot, date, timeIn, volume, partial_volume, status
          FROM rest
          WHERE id IN (?) AND tulha = ?
@@ -1817,21 +1779,19 @@ app.post("/api/cleaning", async (req, res) => {
 
         const consumed = Math.min(remaining, currentVolume);
 
-        // Registra in cleaning_prevnlot
-        await connection.query(
+        await txConn.query(
           `INSERT INTO cleaning_prevnlot (cleaning_id, prev_nLot_rest, volume)
            VALUES (?, ?, ?)`,
           [cleaningId, row.rest_nLot, consumed],
         );
 
-        // Aggiorna status del lotto rest
         if (consumed >= currentVolume) {
-          await connection.query(
+          await txConn.query(
             "UPDATE rest SET status = 'finished', partial_volume = NULL WHERE id = ?",
             [row.id],
           );
         } else {
-          await connection.query(
+          await txConn.query(
             "UPDATE rest SET status = 'split', partial_volume = ? WHERE id = ?",
             [currentVolume - consumed, row.id],
           );
@@ -1841,16 +1801,18 @@ app.post("/api/cleaning", async (req, res) => {
       }
     }
 
-    await connection.commit();
+    await txConn.commit();
     res.status(201).json({
       message: "Cleaning registrato",
       cleaningId,
       cleaning_nLot,
     });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Errore POST /api/cleaning:", err);
     res.status(500).json({ error: "Errore interno" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -1871,7 +1833,7 @@ app.patch("/api/cleaning/:id", async (req, res) => {
     deposit,
   } = req.body;
   try {
-    await connection.query(
+    await pool.query(
       `UPDATE cleaning 
    SET weight = ?, bags = ?, umidity = ?, cata = ?, peneira = ?,
        weight_deposit = ?, umidity_deposit = ?, cata_deposit = ?,
@@ -1902,7 +1864,7 @@ app.patch("/api/cleaning/:id", async (req, res) => {
 // GET cleaning — tutti i lotti puliti
 app.get("/api/cleaning", async (req, res) => {
   try {
-    const [results] = await connection.query(
+    const [results] = await pool.query(
       "SELECT * FROM cleaning WHERE status != 'sold' ORDER BY date DESC",
     );
     res.status(200).json(results);
@@ -1916,7 +1878,7 @@ app.get("/api/cleaning", async (req, res) => {
 // GET buyers
 app.get("/api/buyers", async (req, res) => {
   try {
-    const [results] = await connection.query(
+    const [results] = await pool.query(
       "SELECT * FROM buyers ORDER BY name",
     );
     res.status(200).json(results);
@@ -1929,7 +1891,7 @@ app.get("/api/buyers", async (req, res) => {
 app.post("/api/buyers", async (req, res) => {
   const { name } = req.body;
   try {
-    const [result] = await connection.query(
+    const [result] = await pool.query(
       "INSERT INTO buyers (name) VALUES (?)",
       [name],
     );
@@ -1941,7 +1903,7 @@ app.post("/api/buyers", async (req, res) => {
 
 app.get("/api/selling", async (req, res) => {
   try {
-    const [results] = await connection.query(
+    const [results] = await pool.query(
       `SELECT * FROM cleaning 
        WHERE status != 'sold'
        ORDER BY date DESC`,
@@ -1955,7 +1917,7 @@ app.get("/api/selling", async (req, res) => {
 // GET selling/history — storico vendite
 app.get("/api/selling/history", async (req, res) => {
   try {
-    const [results] = await connection.query(
+    const [results] = await pool.query(
       `SELECT s.*, b.name AS buyer_name, c.cleaning_nLot
        FROM selling s
        JOIN buyers b ON s.buyer_id = b.id
@@ -1982,23 +1944,22 @@ app.post("/api/selling", async (req, res) => {
   } = req.body;
   // lots = array di { cleaning_nLot, cleaning_id, bags_sold, weight_sold }
 
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Genera selling_nLot
-    const [last] = await connection.query(
+    const [last] = await txConn.query(
       "SELECT selling_nLot FROM selling ORDER BY selling_nLot DESC LIMIT 1",
     );
     const lastNlot = last.length === 0 ? "S00000" : last[0].selling_nLot;
     const nextNum = parseInt(lastNlot.substring(1)) + 1;
     const newNlot = "S" + nextNum.toString().padStart(5, "0");
 
-    // Totali aggregati
     const totalBags = lots.reduce((sum, l) => sum + l.bags_sold, 0);
     const totalWeight = lots.reduce((sum, l) => sum + (l.weight_sold || 0), 0);
 
-    // Inserisci vendita
-    const [ins] = await connection.query(
+    const [ins] = await txConn.query(
       `INSERT INTO selling (date, buyer_id, bags_sold, weight_sold, price_per_bag, currency, notes, selling_nLot, certification, certification_bonus)
    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -2016,17 +1977,14 @@ app.post("/api/selling", async (req, res) => {
     );
     const sellingId = ins.insertId;
 
-    // Per ogni lotto venduto
     for (const lot of lots) {
-      // Inserisci in selling_prevnlot
-      await connection.query(
+      await txConn.query(
         `INSERT INTO selling_prevnlot (selling_id, prev_nLot_cleaning, bags)
          VALUES (?, ?, ?)`,
         [sellingId, lot.cleaning_nLot, lot.bags_sold],
       );
 
-      // Aggiorna status cleaning
-      const [rows] = await connection.query(
+      const [rows] = await txConn.query(
         "SELECT bags, weight, partial_bags, partial_weight, status FROM cleaning WHERE id = ?",
         [lot.cleaning_id],
       );
@@ -2048,33 +2006,35 @@ app.post("/api/selling", async (req, res) => {
           : null;
 
       if (remainingBags > 0) {
-        await connection.query(
+        await txConn.query(
           "UPDATE cleaning SET status = 'partial', partial_bags = ?, partial_weight = ? WHERE id = ?",
           [remainingBags, remainingWeight, lot.cleaning_id],
         );
       } else {
-        await connection.query(
+        await txConn.query(
           "UPDATE cleaning SET status = 'sold', partial_bags = NULL, partial_weight = NULL WHERE id = ?",
           [lot.cleaning_id],
         );
       }
     }
 
-    await connection.commit();
+    await txConn.commit();
     res
       .status(201)
       .json({ message: "Vendita registrata", selling_nLot: newNlot });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     console.error("Errore POST /api/selling:", err);
     res.status(500).json({ error: "Errore interno" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
 // GET aggiustamenti per un lotto
 app.get("/api/stock-adjustments/:cleaning_id", async (req, res) => {
   try {
-    const [rows] = await connection.query(
+    const [rows] = await pool.query(
       "SELECT * FROM stock_adjustments WHERE cleaning_id = ? ORDER BY date DESC",
       [req.params.cleaning_id],
     );
@@ -2087,17 +2047,17 @@ app.get("/api/stock-adjustments/:cleaning_id", async (req, res) => {
 // POST aggiustamento — registra perdita
 app.post("/api/stock-adjustments", async (req, res) => {
   const { cleaning_id, bags_lost, date, notes } = req.body;
+  let txConn;
   try {
-    await connection.beginTransaction();
+    txConn = await pool.getConnection();
+    await txConn.beginTransaction();
 
-    // Inserisci aggiustamento
-    await connection.query(
+    await txConn.query(
       "INSERT INTO stock_adjustments (date, cleaning_id, bags_lost, notes) VALUES (?, ?, ?, ?)",
       [date, cleaning_id, bags_lost, notes || null],
     );
 
-    // Aggiorna il residuo in cleaning
-    const [rows] = await connection.query(
+    const [rows] = await txConn.query(
       "SELECT bags, partial_bags, status FROM cleaning WHERE id = ?",
       [cleaning_id],
     );
@@ -2109,22 +2069,24 @@ app.post("/api/stock-adjustments", async (req, res) => {
     const remaining = current - bags_lost;
 
     if (remaining > 0) {
-      await connection.query(
+      await txConn.query(
         "UPDATE cleaning SET partial_bags = ?, status = 'partial' WHERE id = ?",
         [remaining, cleaning_id],
       );
     } else {
-      await connection.query(
+      await txConn.query(
         "UPDATE cleaning SET partial_bags = NULL, status = 'sold' WHERE id = ?",
         [cleaning_id],
       );
     }
 
-    await connection.commit();
+    await txConn.commit();
     res.status(201).json({ message: "Aggiustamento registrato" });
   } catch (err) {
-    await connection.rollback();
+    if (txConn) await txConn.rollback();
     res.status(500).json({ error: "Errore interno" });
+  } finally {
+    if (txConn) txConn.release();
   }
 });
 
@@ -2159,14 +2121,14 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
     WHERE s.selling_nLot = ?`,
       };
       if (!queries[prefix]) return null;
-      const [rows] = await connection.query(queries[prefix], [nLot]);
+      const [rows] = await pool.query(queries[prefix], [nLot]);
       return rows[0] || null;
     };
 
     const fetchChildren = async (prefix, nLot) => {
       let children = [];
       if (prefix === "H") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT p.patio_nLot FROM patio p
            JOIN patio_prevnlot pp ON p.id = pp.patio_id
            WHERE pp.prev_nLot_newlot = ?`,
@@ -2174,19 +2136,19 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         children = rows.map((r) => r.patio_nLot);
       } else if (prefix === "P") {
-        const [dRows] = await connection.query(
+        const [dRows] = await pool.query(
           `SELECT d.dryer_nLot FROM dryer d
            JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
            WHERE dp.prev_nLot_patio = ?`,
           [nLot],
         );
-        const [fRows] = await connection.query(
+        const [fRows] = await pool.query(
           `SELECT f.fermentation_nLot FROM fermentation f
            JOIN fermentation_prevnlot fp ON f.id = fp.fermentation_id
            WHERE fp.prev_nLot_patio = ?`,
           [nLot],
         );
-        const [rRows] = await connection.query(
+        const [rRows] = await pool.query(
           `SELECT r.rest_nLot FROM rest r
            JOIN rest_prevnlot rp ON r.id = rp.rest_id
            WHERE rp.prev_nLot_patio = ?`,
@@ -2198,7 +2160,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
           ...rRows.map((r) => r.rest_nLot),
         ];
       } else if (prefix === "D") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT r.rest_nLot FROM rest r
            JOIN rest_prevnlot rp ON r.id = rp.rest_id
            WHERE rp.prev_nLot_dryer = ?`,
@@ -2206,7 +2168,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         children = rows.map((r) => r.rest_nLot);
       } else if (prefix === "F") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT p.patio_nLot FROM patio p
            JOIN patio_prevnlot_fermentation pp ON p.id = pp.patio_id
            WHERE pp.prev_nLot_fermentation = ?`,
@@ -2214,7 +2176,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         children = rows.map((r) => r.patio_nLot);
       } else if (prefix === "R") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT c.cleaning_nLot FROM cleaning c
            JOIN cleaning_prevnlot cp ON c.id = cp.cleaning_id
            WHERE cp.prev_nLot_rest = ?`,
@@ -2222,7 +2184,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         children = rows.map((r) => r.cleaning_nLot);
       } else if (prefix === "C") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT s.selling_nLot FROM selling s
            JOIN selling_prevnlot sp ON s.id = sp.selling_id
            WHERE sp.prev_nLot_cleaning = ?`,
@@ -2237,7 +2199,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
     const fetchRoots = async (prefix, nLot) => {
       let parents = [];
       if (prefix === "P") {
-        const [r1] = await connection.query(
+        const [r1] = await pool.query(
           `SELECT pp.prev_nLot_newlot FROM patio_prevnlot pp
            JOIN patio p ON p.id = pp.patio_id
            WHERE p.patio_nLot = ?`,
@@ -2247,7 +2209,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
           .filter((r) => r.prev_nLot_newlot)
           .map((r) => r.prev_nLot_newlot);
         // anche da fermentazione
-        const [r2] = await connection.query(
+        const [r2] = await pool.query(
           `SELECT pp.prev_nLot_fermentation FROM patio_prevnlot_fermentation pp
            JOIN patio p ON p.id = pp.patio_id
            WHERE p.patio_nLot = ?`,
@@ -2260,7 +2222,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
             .map((r) => r.prev_nLot_fermentation),
         ];
       } else if (prefix === "D") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT dp.prev_nLot_patio FROM dryer_prevnlot dp
            JOIN dryer d ON d.id = dp.dryer_id
            WHERE d.dryer_nLot = ?`,
@@ -2268,7 +2230,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         parents = rows.map((r) => r.prev_nLot_patio);
       } else if (prefix === "F") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT fp.prev_nLot_patio FROM fermentation_prevnlot fp
            JOIN fermentation f ON f.id = fp.fermentation_id
            WHERE f.fermentation_nLot = ?`,
@@ -2276,13 +2238,13 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         parents = rows.map((r) => r.prev_nLot_patio);
       } else if (prefix === "R") {
-        const [r1] = await connection.query(
+        const [r1] = await pool.query(
           `SELECT rp.prev_nLot_patio FROM rest_prevnlot rp
            JOIN rest r ON r.id = rp.rest_id
            WHERE r.rest_nLot = ?`,
           [nLot],
         );
-        const [r2] = await connection.query(
+        const [r2] = await pool.query(
           `SELECT rp.prev_nLot_dryer FROM rest_prevnlot rp
            JOIN rest r ON r.id = rp.rest_id
            WHERE r.rest_nLot = ?`,
@@ -2293,7 +2255,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
           ...r2.filter((r) => r.prev_nLot_dryer).map((r) => r.prev_nLot_dryer),
         ];
       } else if (prefix === "C") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT cp.prev_nLot_rest FROM cleaning_prevnlot cp
            JOIN cleaning c ON c.id = cp.cleaning_id
            WHERE c.cleaning_nLot = ?`,
@@ -2301,7 +2263,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
         );
         parents = rows.map((r) => r.prev_nLot_rest);
       } else if (prefix === "S") {
-        const [rows] = await connection.query(
+        const [rows] = await pool.query(
           `SELECT sp.prev_nLot_cleaning FROM selling_prevnlot sp
            JOIN selling s ON s.id = sp.selling_id
            WHERE s.selling_nLot = ?`,
@@ -2355,7 +2317,7 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
   const { codename } = req.params;
   try {
     // 1. Info base appezzamento
-    const [plotInfo] = await connection.query(
+    const [plotInfo] = await pool.query(
       "SELECT * FROM plots WHERE codename = ?",
       [codename],
     );
@@ -2364,14 +2326,14 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
     const plot = plotInfo[0];
 
     // 2. Totale litri raccolti (newlot)
-    const [harvest] = await connection.query(
+    const [harvest] = await pool.query(
       `SELECT COUNT(*) as nLots, COALESCE(SUM(volume), 0) as totalVolume
        FROM newlot WHERE plot = ?`,
       [codename],
     );
 
     // 3. Distribuzione tipi sul patio (CD, Green, Dry, Natural, BigDry)
-    const [typesDist] = await connection.query(
+    const [typesDist] = await pool.query(
       `SELECT p.type, COALESCE(SUM(p.volume), 0) as volume
        FROM patio p
        JOIN patio_prevnlot pp ON p.id = pp.patio_id
@@ -2382,7 +2344,7 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
     );
 
     // 4. Renda — litri raccolti / peso pulito venduto
-    const [renda] = await connection.query(
+    const [renda] = await pool.query(
       `SELECT 
          COALESCE(SUM(nl.volume), 0) as litersHarvested,
          COALESCE(SUM(c.weight_deposit), 0) as weightSold
@@ -2398,7 +2360,7 @@ app.get("/api/dashboard/plot/:codename", async (req, res) => {
     );
 
     // 5. Andamento raccolta nel tempo (per grafico a linea)
-    const [harvestOverTime] = await connection.query(
+    const [harvestOverTime] = await pool.query(
       `SELECT DATE_FORMAT(date, '%Y-%m') as month, SUM(volume) as volume
        FROM newlot WHERE plot = ?
        GROUP BY month ORDER BY month ASC`,
