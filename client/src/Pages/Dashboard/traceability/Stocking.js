@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { getApiErrorKey } from "../../../utils/apiError";
 import { useLang } from "../../../LanguageContext";
 import BackButton from "../../../components/BackButton";
 import "../Traceability.css";
@@ -76,7 +77,7 @@ const Stocking = () => {
       fetchLots();
     } catch (err) {
       console.error("Errore salvataggio:", err);
-      alert("Errore durante il salvataggio.");
+      alert(t(getApiErrorKey(err)));
     } finally {
       setIsSaving(false);
     }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLang } from "../../../LanguageContext";
 import { useOffline } from "../../../OfflineContext";
 import useOfflineRequest from "../../../hooks/useOfflineRequest";
+import { getApiErrorKey } from "../../../utils/apiError";
 import { addOfflineNLot } from "../../../db/offlineDB";
 import PendingBanner from "../../../components/PendingBanner";
 import BackButton from "../../../components/BackButton";
@@ -57,7 +58,7 @@ const NewLot = () => {
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore:", err);
-      alert(t("error"));
+      alert(t(getApiErrorKey(err)));
     }
   };
 

@@ -114,18 +114,6 @@ const Cleaning = () => {
     });
   };
 
-  const generateNLot = async () => {
-    try {
-      const data = await get(`${BASE_URL}/api/cleaning/last-nlot`);
-      const last = data.cleaning_nLot || "C00000";
-      return (
-        "C" + (parseInt(last.substring(1)) + 1).toString().padStart(5, "0")
-      );
-    } catch {
-      return "C00001";
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -141,7 +129,6 @@ const Cleaning = () => {
 
     setIsSubmitting(true);
     try {
-      const nLot = await generateNLot();
       const cleaningPayload = {
         date: form.date,
         volume: totalVolume,
@@ -150,7 +137,6 @@ const Cleaning = () => {
         umidity: form.umidity ? parseFloat(form.umidity) : null,
         cata: form.cata ? parseInt(form.cata) : null,
         deposit: form.deposit || null,
-        cleaning_nLot: nLot,
         lots: selectedTulhas.map((t) => ({
           tulha: t.tulha,
           volumeUsed: getUsedVolume(t),
@@ -162,7 +148,7 @@ const Cleaning = () => {
       alert(
         res.offline
           ? t("savedOffline")
-          : t("cleaningRegistered", { lot: nLot }),
+          : t("cleaningRegistered", { lot: res.cleaning_nLot }),
       );
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {

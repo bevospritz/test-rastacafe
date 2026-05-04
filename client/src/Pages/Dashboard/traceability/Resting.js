@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLang } from "../../../LanguageContext";
 import { useOffline } from "../../../OfflineContext";
 import useOfflineRequest from "../../../hooks/useOfflineRequest";
+import { getApiErrorKey } from "../../../utils/apiError";
 import { isNLotPending } from "../../../db/offlineDB";
 import PendingBanner from "../../../components/PendingBanner";
 import BackButton from "../../../components/BackButton";
@@ -159,7 +160,7 @@ const Resting = () => {
         };
         const patches = [];
         if (dryerPatchPayload.lots.length > 0)
-          patches.push(patch(`${BASE_URL}/api/rest/update-lots`, dryerPatchPayload));
+          patches.push(patch(`${BASE_URL}/api/dryer/update-lots`, dryerPatchPayload));
         if (patioPatchPayload.lots.length > 0)
           patches.push(patch(`${BASE_URL}/api/patio/update-lots`, patioPatchPayload));
         await Promise.all(patches);
@@ -169,7 +170,7 @@ const Resting = () => {
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore REST:", err);
-      alert(t("error"));
+      alert(t(getApiErrorKey(err)));
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,7 @@
 // app.js
 
 import "./env.js";
+import { validatePositiveNumber, validateDate, validateRange, firstError } from "./validation.js";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -541,6 +542,12 @@ app.post("/api/excelplots", upload.single("file"), async (req, res) => {
 app.post("/api/newlot", async (req, res) => {
   const { plot, volume, date, method, type } = req.body;
 
+  const err = firstError(
+    validatePositiveNumber(volume, "invalidVolume"),
+    validateDate(date),
+  );
+  if (err) return res.status(400).json({ error: err });
+
   const getLastNlotQuery =
     "SELECT newlot_nLot FROM newlot ORDER BY newlot_nLot DESC LIMIT 1";
   const insertNewLotQuery =
@@ -843,7 +850,7 @@ app.get("/api/can-delete/:type/:nLot", async (req, res) => {
       childType = "rest";
     } else if (type === "fermentation") {
       const [r] = await pool.query(
-        "SELECT COUNT(*) as n FROM patio_prevnlot_fermentation WHERE prev_nLot_fermentation = ?",
+        "SELECT COUNT(*) as n FROM patio_prevnlot WHERE prev_nLot_fermentation = ?",
         [nLot],
       );
       hasChildren = r[0].n > 0;
@@ -956,7 +963,15 @@ app.post("/api/patio", async (req, res) => {
   const data = req.body;
 
   if (!Array.isArray(data)) {
-    return res.status(400).json({ error: "Invalid data format" });
+    return res.status(400).json({ error: "validationError" });
+  }
+
+  for (const entry of data) {
+    const err = firstError(
+      validatePositiveNumber(entry.volume, "invalidVolume"),
+      validateDate(entry.date),
+    );
+    if (err) return res.status(400).json({ error: err });
   }
 
   const getLastNlotQuery =
@@ -1171,8 +1186,14 @@ app.post("/api/fermentation", async (req, res) => {
   const { volume, date, type, timeIn, method, lots } = req.body;
 
   if (!volume || !date || !type || !timeIn || !method || !Array.isArray(lots)) {
-    return res.status(400).json({ message: "Dati incompleti" });
+    return res.status(400).json({ error: "validationError" });
   }
+
+  const fermentErr = firstError(
+    validatePositiveNumber(volume, "invalidVolume"),
+    validateDate(date),
+  );
+  if (fermentErr) return res.status(400).json({ error: fermentErr });
 
   let txConn;
   try {
@@ -1391,8 +1412,14 @@ app.post("/api/dryer", async (req, res) => {
   // lots: array di { prev_nLot_patio, volume } fornito dal frontend
 
   if (!dryer || !volume || !date || !timeIn || !Array.isArray(lots)) {
-    return res.status(400).json({ message: "Dati incompleti" });
+    return res.status(400).json({ error: "validationError" });
   }
+
+  const dryerErr = firstError(
+    validatePositiveNumber(volume, "invalidVolume"),
+    validateDate(date),
+  );
+  if (dryerErr) return res.status(400).json({ error: dryerErr });
 
   let txConn;
   try {
@@ -1487,8 +1514,14 @@ app.post("/api/rest", async (req, res) => {
   const { tulha, volume, date, timeIn, lots } = req.body;
 
   if (!tulha || !volume || !date || !timeIn || !Array.isArray(lots)) {
-    return res.status(400).json({ message: "Dati incompleti" });
+    return res.status(400).json({ error: "validationError" });
   }
+
+  const restErr = firstError(
+    validatePositiveNumber(volume, "invalidVolume"),
+    validateDate(date),
+  );
+  if (restErr) return res.status(400).json({ error: restErr });
 
   let txConn;
   try {
@@ -1544,7 +1577,7 @@ app.post("/api/rest", async (req, res) => {
 });
 
 //Endpoint per modificare i lotti del dryer partial_volume e status
-app.patch("/api/rest/update-lots", async (req, res) => {
+app.patch("/api/dryer/update-lots", async (req, res) => {
   const { lots } = req.body;
 
   if (!Array.isArray(lots) || lots.length === 0) {
@@ -1632,7 +1665,7 @@ app.get("/api/restforcleaning", async (req, res) => {
       LEFT JOIN patio p ON rp.prev_nLot_patio = p.patio_nLot
       LEFT JOIN dryer d ON rp.prev_nLot_dryer = d.dryer_nLot
       LEFT JOIN dryer_prevnlot dp ON d.id = dp.dryer_id
-      LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nlot
+      LEFT JOIN patio p2 ON dp.prev_nLot_patio = p2.patio_nLot
       WHERE r.status IN ('active', 'split')
       GROUP BY r.id, r.tulha, r.date, r.volume, r.rest_nLot,
                p.date, p.type, p.volume,
@@ -1733,14 +1766,29 @@ app.post("/api/cleaning", async (req, res) => {
     umidity,
     cata,
     deposit,
-    cleaning_nLot,
     lots,
   } = req.body;
+
+  const cleanErr = firstError(
+    validateDate(date),
+    validatePositiveNumber(volume, "invalidVolume"),
+    validatePositiveNumber(bags, "invalidBags"),
+    weight != null ? validatePositiveNumber(weight, "invalidWeight") : null,
+    validateRange(umidity, 0, 100),
+  );
+  if (cleanErr) return res.status(400).json({ error: cleanErr });
 
   let txConn;
   try {
     txConn = await pool.getConnection();
     await txConn.beginTransaction();
+
+    const [last] = await txConn.query(
+      "SELECT cleaning_nLot FROM cleaning ORDER BY cleaning_nLot DESC LIMIT 1",
+    );
+    const lastNlot = last.length === 0 ? "C00000" : last[0].cleaning_nLot;
+    const nextNum = parseInt(lastNlot.substring(1)) + 1;
+    const cleaning_nLot = "C" + nextNum.toString().padStart(5, "0");
 
     const [ins] = await txConn.query(
       `INSERT INTO cleaning (date, volume, weight, bags, cleaning_nLot, umidity, cata, deposit)
@@ -1944,6 +1992,14 @@ app.post("/api/selling", async (req, res) => {
   } = req.body;
   // lots = array di { cleaning_nLot, cleaning_id, bags_sold, weight_sold }
 
+  const sellErr = firstError(
+    validateDate(date),
+    !buyer_id ? "validationError" : null,
+    !Array.isArray(lots) || lots.length === 0 ? "validationError" : null,
+    ...(Array.isArray(lots) ? lots.map((l) => validatePositiveNumber(l.bags_sold, "invalidBagsSold")) : []),
+  );
+  if (sellErr) return res.status(400).json({ error: sellErr });
+
   let txConn;
   try {
     txConn = await pool.getConnection();
@@ -2047,6 +2103,13 @@ app.get("/api/stock-adjustments/:cleaning_id", async (req, res) => {
 // POST aggiustamento — registra perdita
 app.post("/api/stock-adjustments", async (req, res) => {
   const { cleaning_id, bags_lost, date, notes } = req.body;
+
+  const adjErr = firstError(
+    validateDate(date),
+    validatePositiveNumber(bags_lost, "invalidBagsLost"),
+  );
+  if (adjErr) return res.status(400).json({ error: adjErr });
+
   let txConn;
   try {
     txConn = await pool.getConnection();
@@ -2170,7 +2233,7 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
       } else if (prefix === "F") {
         const [rows] = await pool.query(
           `SELECT p.patio_nLot FROM patio p
-           JOIN patio_prevnlot_fermentation pp ON p.id = pp.patio_id
+           JOIN patio_prevnlot pp ON p.id = pp.patio_id
            WHERE pp.prev_nLot_fermentation = ?`,
           [nLot],
         );
@@ -2210,9 +2273,9 @@ app.get("/api/lot-history/:nLot", async (req, res) => {
           .map((r) => r.prev_nLot_newlot);
         // anche da fermentazione
         const [r2] = await pool.query(
-          `SELECT pp.prev_nLot_fermentation FROM patio_prevnlot_fermentation pp
+          `SELECT pp.prev_nLot_fermentation FROM patio_prevnlot pp
            JOIN patio p ON p.id = pp.patio_id
-           WHERE p.patio_nLot = ?`,
+           WHERE p.patio_nLot = ? AND pp.prev_nLot_fermentation IS NOT NULL`,
           [nLot],
         );
         parents = [

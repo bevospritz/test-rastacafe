@@ -79,6 +79,13 @@ const translations = {
     // Newlot alert
     lotCreated: "Lotto creato con successo!",
     invalidVolume: "Il volume deve essere un numero valido maggiore di zero.",
+    invalidDate: "La data non è valida o è mancante.",
+    invalidBags: "Il numero di sacchi deve essere maggiore di zero.",
+    invalidWeight: "Il peso deve essere un numero positivo.",
+    invalidUmidity: "L'umidità deve essere un valore tra 0 e 100.",
+    invalidBagsLost: "I sacchi persi devono essere maggiori di zero.",
+    invalidBagsSold: "I sacchi venduti devono essere maggiori di zero.",
+    validationError: "Dati non validi, controlla i campi del modulo.",
     confirmData: "Confermi i seguenti dati?",
     operationCancelled: "Operazione annullata.",
 
@@ -382,6 +389,13 @@ const translations = {
     // Newlot alert
     lotCreated: "Lote criado com sucesso!",
     invalidVolume: "O volume deve ser um número válido maior que zero.",
+    invalidDate: "A data é inválida ou está em falta.",
+    invalidBags: "O número de sacas deve ser maior que zero.",
+    invalidWeight: "O peso deve ser um número positivo.",
+    invalidUmidity: "A umidade deve ser um valor entre 0 e 100.",
+    invalidBagsLost: "As sacas perdidas devem ser maiores que zero.",
+    invalidBagsSold: "As sacas vendidas devem ser maiores que zero.",
+    validationError: "Dados inválidos, verifique os campos do formulário.",
     confirmData: "Confirma os seguintes dados?",
     operationCancelled: "Operação cancelada.",
 

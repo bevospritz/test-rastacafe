@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLang } from "../../../LanguageContext";
 import { useOffline } from "../../../OfflineContext";
 import useOfflineRequest from "../../../hooks/useOfflineRequest";
+import { getApiErrorKey } from "../../../utils/apiError";
 import { isNLotPending } from "../../../db/offlineDB";
 import PendingBanner from "../../../components/PendingBanner";
 import BackButton from "../../../components/BackButton";
@@ -135,7 +136,7 @@ const Drying = () => {
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore:", err.response ? err.response.data : err.message);
-      alert(t("error"));
+      alert(t(getApiErrorKey(err)));
     } finally {
       setIsSubmitting(false);
     }

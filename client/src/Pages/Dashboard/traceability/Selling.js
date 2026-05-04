@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getApiErrorKey } from "../../../utils/apiError";
 import Modal from "react-modal";
 import { useLang } from "../../../LanguageContext";
 import BackButton from "../../../components/BackButton";
@@ -219,7 +220,7 @@ const Selling = () => {
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore vendita:", err);
-      alert(t("savingError"));
+      alert(t(getApiErrorKey(err)));
     } finally {
       setIsSubmitting(false);
     }
@@ -254,7 +255,7 @@ const Selling = () => {
       fetchLots();
     } catch (err) {
       console.error("Errore registrazione perdita:", err);
-      alert(t("savingError"));
+      alert(t(getApiErrorKey(err)));
     } finally {
       setIsSubmitting(false);
     }

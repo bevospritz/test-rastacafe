@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getApiErrorKey } from "../../../utils/apiError";
 import Modal from "react-modal";
 import { useLang } from "../../../LanguageContext";
 import "../Traceability.css";
@@ -287,7 +288,7 @@ const WashDevide = () => {
       navigate("/dashboard/traceability/manage-lot");
     } catch (err) {
       console.error("Errore:", err);
-      alert(t("error"));
+      alert(t(getApiErrorKey(err)));
     }
   };
 
