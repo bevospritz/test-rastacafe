@@ -325,6 +325,39 @@ th {
   }
 }
 
+/* ── Tablet: tabelle dense ── */
+@media (max-width: 1024px) {
+  th, td {
+    padding: 7px 8px;
+    font-size: 0.82rem;
+  }
+
+  .form-container {
+    padding: 20px;
+  }
+
+  /* Corregge il bleeding del form-header per il padding ridotto */
+  .form-header {
+    margin: -20px -20px 20px -20px;
+  }
+}
+
+/* ── Mobile: ulteriore compressione ── */
+@media (max-width: 414px) {
+  .form-container {
+    padding: 16px;
+  }
+
+  .form-header {
+    margin: -16px -16px 16px -16px;
+  }
+
+  th, td {
+    padding: 5px 6px;
+    font-size: 0.78rem;
+  }
+}
+
 /* ── LotsList ── */
 .lots-status-badge {
   display: inline-block;

@@ -248,10 +248,20 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 768px) {
-  .dash-header { padding: 20px 16px; }
-  .plot-info-bar { padding: 10px 16px; }
-  .kpi-grid { padding: 16px; }
+
+/* Tablet: riduci padding, mantieni 2 colonne */
+@media (max-width: 1024px) {
+  .dash-header { padding: 20px 20px; }
+  .kpi-grid { padding: 16px 20px 8px; }
+  .charts-grid { padding: 12px 20px 24px; }
+  .plot-info-bar { padding: 10px 20px; }
+}
+
+/* Mobile: collassa a 1 colonna */
+@media (max-width: 600px) {
+  .dash-header { padding: 16px; }
+  .plot-info-bar { padding: 8px 16px; }
+  .kpi-grid { padding: 12px 16px; }
   .charts-grid {
     grid-template-columns: 1fr;
     padding: 8px 16px 24px;
