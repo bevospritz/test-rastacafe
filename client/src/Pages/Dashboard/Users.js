@@ -63,13 +63,10 @@ const GestioneUsers = () => {
 
   return (
     <div className="form-container">
-      <h2>{t("usersTitle")}</h2>
-
-      {/* Bottone aggiungi */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+      <div className="form-header">
+        <h2>{t("usersTitle")}</h2>
         <button
           className="action-button"
-          style={{ width: "auto", marginTop: 0, padding: "8px 20px" }}
           onClick={() => setShowForm((prev) => !prev)}
         >
           {showForm ? t("cancel") : "+ " + t("newUser")}
@@ -78,13 +75,7 @@ const GestioneUsers = () => {
 
       {/* Form aggiunta utente */}
       {showForm && (
-        <form onSubmit={handleAddUser} style={{
-          padding: "1rem", marginBottom: "1.5rem",
-          backgroundColor: "var(--color-edit-light)",
-          border: "1px solid var(--color-edit-border)",
-          borderRadius: "var(--radius-md)"
-        }}>
-          <div className="info-section-title" style={{ marginBottom: "0.75rem" }}>{t("newUser")}</div>
+        <form onSubmit={handleAddUser} className="new-user-form">
           <label>{t("email")}
             <input
               type="email"
@@ -104,7 +95,7 @@ const GestioneUsers = () => {
               required
             />
           </label>
-          <label>{t("role")}:
+          <label>{t("role")}
             <select
               value={newUser.role}
               onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value }))}
@@ -114,14 +105,10 @@ const GestioneUsers = () => {
               ))}
             </select>
           </label>
-          <div className="button-container" style={{ marginTop: "0.5rem" }}>
-            <button type="submit" className="action-button save" disabled={isSubmitting}>
-              {isSubmitting ? "Creazione..." : t("createUser")}
-            </button>
-            <button type="button" className="action-button cancel" onClick={() => setShowForm(false)}>
-              {t("cancel")}
-            </button>
-          </div>
+          <button type="submit" className="action-button save" disabled={isSubmitting}
+            style={{ marginTop: "0.25rem" }}>
+            {isSubmitting ? "Creazione..." : t("createUser")}
+          </button>
         </form>
       )}
 

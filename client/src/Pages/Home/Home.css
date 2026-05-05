@@ -1,25 +1,50 @@
 .Home {
   text-align: center;
   background-color: var(--bg-surface);
-  padding: 40px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  width: 250px;
+  width: min(420px, 92vw);
   margin: auto;
-  margin-top: 10%;
+  margin-top: 8%;
   color: var(--text-primary);
+  overflow: hidden;
 }
 
-.App-header {
+.home-header {
+  background: linear-gradient(135deg, var(--chrome-bg) 0%, var(--chrome-surface) 100%);
+  padding: 32px 40px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+.home-body {
+  padding: 28px 40px 36px;
+}
+
 .App-logo {
-  height: 30vmin;
-  margin-bottom: 20px;
+  max-height: 140px;
+  width: auto;
+  max-width: 80%;
+  margin-bottom: 16px;
   pointer-events: none;
+}
+
+.home-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--chrome-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.home-subtitle {
+  font-size: 0.8rem;
+  color: var(--chrome-link);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 6px 0 0;
 }
 
 .button-container {
@@ -60,12 +85,19 @@
 
 @media (max-width: 768px) {
   .Home {
-    padding: 30px;
-    width: 80%;
+    margin-top: 6%;
+  }
+
+  .home-header {
+    padding: 24px 24px 20px;
+  }
+
+  .home-body {
+    padding: 20px 24px 28px;
   }
 
   .App-logo {
-    height: 25vmin;
+    max-height: 110px;
   }
 
   .button-container {

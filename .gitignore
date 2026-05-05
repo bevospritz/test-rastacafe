@@ -20,3 +20,12 @@ Thumbs.db
 # Editor
 .vscode/
 *.sublime*
+
+# Local documents and receipts (never commit)
+Template/
+Drawio/
+Rastacafe Documents/
+Ricevute Rastacafe/
+
+# Claude Code
+.claude/

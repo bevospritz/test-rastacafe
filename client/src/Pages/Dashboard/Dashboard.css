@@ -20,11 +20,29 @@
   width: calc(100% - 250px);
 }
 
+.sidebar-backdrop {
+  display: none;
+}
+
+/* Tablet e sotto: sidebar fa overlay, il contenuto non viene spostato */
+@media (max-width: 1024px) {
+  .dashboard-collapsed {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 998;
+  }
+}
+
 @media (max-width: 414px) {
   .dashboard-content {
     transition: none;
-    margin-left: 0;
-    width: 100%;
     padding: 16px;
   }
 }

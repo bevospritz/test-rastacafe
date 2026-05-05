@@ -249,7 +249,9 @@ const PlotsManagement = () => {
 
   return (
     <div className="form-container plots-container">
-      <h2>{t("plotsTitle")}</h2>
+      <div className="form-header">
+        <h2>{t("plotsTitle")}</h2>
+      </div>
 
       {/* Filtro */}
       <div className="plots-filter-bar">

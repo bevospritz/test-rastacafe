@@ -24,8 +24,12 @@ const ManageLot = () => {
 
   return (
     <div className="form-container">
-      <h2>{t("manageLot")}</h2>
-      <p className="page-subtitle">{t("manageLotSubtitle")}</p>
+      <div className="form-header">
+        <div>
+          <h2>{t("manageLot")}</h2>
+          <p className="page-subtitle">{t("manageLotSubtitle")}</p>
+        </div>
+      </div>
       <div className="button-container-nav">
         {STEPS.map((step) => (
           <ProtectedLink key={step.path} permission={step.permission}>

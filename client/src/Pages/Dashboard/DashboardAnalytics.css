@@ -28,13 +28,13 @@
   font-size: 2rem;
   font-weight: 700;
   margin: 0;
-  color: var(--brand-pale);
+  color: var(--chrome-text);
   letter-spacing: -0.02em;
 }
 
 .dash-subtitle {
   font-size: 0.85rem;
-  color: var(--brand-accent);
+  color: var(--chrome-link);
   margin: 4px 0 0;
   font-weight: 300;
   letter-spacing: 0.05em;
@@ -53,14 +53,14 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--brand-accent);
+  color: var(--chrome-link);
   font-weight: 500;
 }
 
 .plot-selector {
   background-color: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);
-  color: var(--brand-pale);
+  color: var(--chrome-text);
   padding: 8px 14px;
   border-radius: var(--radius-md);
   font-family: var(--font-body);
@@ -77,7 +77,7 @@
 
 .plot-selector option {
   background-color: var(--chrome-bg);
-  color: var(--brand-pale);
+  color: var(--chrome-text);
 }
 
 /* ── Info bar appezzamento ── */

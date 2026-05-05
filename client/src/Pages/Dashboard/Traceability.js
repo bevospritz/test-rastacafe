@@ -217,24 +217,25 @@ const Traceability = () => {
     <div>
       {showTraceability && (
         <div className="traceability-wrapper">
-          <h2 style={{ color: "#ffffff" }}>
-            {t("traceability").toUpperCase()}
-          </h2>
-          <p className="page-subtitle">{t("traceabilitySubtitle")}</p>
-
-          <div className="traceability-actions">
-            <button
-              className="action-button"
-              onClick={() => navigate("/dashboard/traceability/manage-lot")}
-            >
-              {t("manageLot")}
-            </button>
-            <button
-              className="action-button"
-              onClick={() => navigate("/dashboard/traceability/lot-history")}
-            >
-              {t("lotHistory")}
-            </button>
+          <div className="page-header-bar">
+            <div>
+              <h2>{t("traceability").toUpperCase()}</h2>
+              <p className="page-subtitle">{t("traceabilitySubtitle")}</p>
+            </div>
+            <div className="traceability-actions">
+              <button
+                className="action-button"
+                onClick={() => navigate("/dashboard/traceability/manage-lot")}
+              >
+                {t("manageLot")}
+              </button>
+              <button
+                className="action-button"
+                onClick={() => navigate("/dashboard/traceability/lot-history")}
+              >
+                {t("lotHistory")}
+              </button>
+            </div>
           </div>
 
           <div className="card-container">

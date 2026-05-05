@@ -95,7 +95,9 @@ const ManageStructure = () => {
 
   return (
     <div className="form-container" style={{ maxWidth: "900px" }}>
-      <h2>{t("manageStructureTitle")}</h2>
+      <div className="form-header">
+        <h2>{t("manageStructureTitle")}</h2>
+      </div>
 
       {farms.map((farm) => (
         <div key={farm.id}>

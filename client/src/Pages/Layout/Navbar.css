@@ -81,11 +81,10 @@
   color: var(--chrome-link-hover);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .navbar-logo img {
     height: 30px;
     margin-right: 5px;
-    margin-left: 100px;
   }
 
   .navbar-logo h3 {

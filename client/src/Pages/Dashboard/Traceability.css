@@ -54,6 +54,48 @@ h2 {
   margin-bottom: 20px;
 }
 
+/* ── Page Header (intestazione con gradiente, per pagine non-form) ── */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, var(--chrome-bg) 0%, var(--chrome-surface) 100%);
+  margin: -24px -24px 24px -24px;
+  padding: 20px 24px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form-header h2 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  text-align: left;
+  color: var(--chrome-text);
+  letter-spacing: -0.01em;
+}
+
+.form-header .action-button {
+  width: auto;
+  margin-top: 0;
+  padding: 8px 20px;
+}
+
+.form-header .page-subtitle {
+  color: var(--chrome-link);
+  margin: 4px 0 0;
+  text-align: left;
+}
+
+/* ── Inline form (es. nuovo utente) ── */
+.new-user-form {
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px dashed var(--border-light);
+}
+
 /* ── Back Button ── */
 .back-button {
   display: inline-flex;
@@ -644,14 +686,21 @@ th {
 
 .modal-content {
   background-color: var(--bg-surface);
-  margin: 15% auto;
+  margin: 8% auto;
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  width: 80%;
+  width: 90%;
   max-width: 600px;
   box-shadow: var(--shadow-md);
   color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    width: 80%;
+    margin: 5% auto;
+  }
 }
 
 .modal-header {
@@ -702,17 +751,46 @@ th {
   margin: 0 auto;
 }
 
+/* Banner header per pagine senza form-container */
+.page-header-bar {
+  background: linear-gradient(135deg, var(--chrome-bg) 0%, var(--chrome-surface) 100%);
+  padding: 20px 24px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header-bar h2 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  text-align: left;
+  color: var(--chrome-text);
+  letter-spacing: -0.01em;
+}
+
+.page-header-bar .page-subtitle {
+  color: var(--chrome-link);
+  margin: 4px 0 0;
+  text-align: left;
+}
+
 .traceability-actions {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
   flex-wrap: wrap;
+  margin-bottom: 0;
 }
 
 .traceability-actions .action-button {
   width: auto;
   margin-top: 0;
-  padding: 10px 28px;
+  padding: 8px 20px;
   font-size: 0.95rem;
 }
 

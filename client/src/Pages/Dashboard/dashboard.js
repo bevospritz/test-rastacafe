@@ -12,6 +12,9 @@ const Dashboard = () => {
     <div>
       <Navbar onBurgerClick={toggleSidebar} />
       <Sidebar isOpen={isSidebarOpen} />
+      {isSidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
       <div className={`dashboard-content ${isSidebarOpen ? "dashboard-collapsed" : "dashboard-expanded"}`}>
         <Outlet />
       </div>

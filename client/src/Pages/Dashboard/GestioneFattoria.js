@@ -74,7 +74,9 @@ const ManageFarm = () => {
 
   return (
     <div className="form-container">
-      <h2>{t("manageFarmTitle")}</h2>
+      <div className="form-header">
+        <h2>{t("manageFarmTitle")}</h2>
+      </div>
 
       {farms.length === 0 ? (
         <div style={{ textAlign: "center", padding: "2rem 0" }}>

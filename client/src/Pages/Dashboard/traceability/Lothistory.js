@@ -198,11 +198,14 @@ const LotHistory = () => {
 
   return (
     <div className="form-container">
-      <h2>Storia Lotto</h2>
-      <p className="page-subtitle">
-        Inserisci il codice di qualsiasi lotto per visualizzarne il percorso
-        completo.
-      </p>
+      <div className="form-header">
+        <div>
+          <h2>Storia Lotto</h2>
+          <p className="page-subtitle">
+            Inserisci il codice di un lotto per visualizzarne il percorso completo.
+          </p>
+        </div>
+      </div>
 
       {/* Barra di ricerca */}
       <div className="lot-search-bar">
