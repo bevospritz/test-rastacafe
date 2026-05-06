@@ -441,6 +441,19 @@ app.patch("/api/elements/:id", async (req, res) => {
   }
 });
 
+// Template Excel per l'import degli appezzamenti
+app.get("/api/excelplots/template", (req, res) => {
+  const wb = XLSX.utils.book_new();
+  const headers = ["name", "codename", "variety", "ncovas", "distance", "surface", "age", "state", "irrigation", "renda_forecast"];
+  const example = ["Appezzamento Nord", "P01", "Catuai", 1200, 280, 5.5, 2015, "raccolta", "Yes", 4.8];
+  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+  XLSX.utils.book_append_sheet(wb, ws, "Appezzamenti");
+  const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  res.setHeader("Content-Disposition", "attachment; filename=template_appezzamenti.xlsx");
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.send(buffer);
+});
+
 // Endpoint per l'upload degli appezzamenti tramite file Excel
 app.post("/api/excelplots", upload.single("file"), async (req, res) => {
   try {

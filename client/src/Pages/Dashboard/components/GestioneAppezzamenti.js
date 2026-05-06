@@ -279,6 +279,15 @@ const PlotsManagement = () => {
           <h3>{farm.name.toUpperCase()}</h3>
 
           {/* Dropzone */}
+          <div className="plots-dropzone-header">
+            <a
+              href="/api/excelplots/template"
+              download
+              className="action-button plots-template-btn"
+            >
+              {t("downloadTemplate")}
+            </a>
+          </div>
           <div
             {...getRootProps()}
             className={`plots-dropzone ${isDragActive ? "active" : ""} ${isUploading ? "uploading" : ""} ${!selectedFarm ? "disabled" : ""}`}

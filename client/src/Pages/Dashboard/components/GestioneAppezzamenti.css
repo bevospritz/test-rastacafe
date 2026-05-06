@@ -30,6 +30,22 @@
   border-color: var(--color-primary);
 }
 
+/* Header sopra la dropzone con link template */
+.plots-dropzone-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.plots-template-btn {
+  font-size: 0.82rem !important;
+  padding: 5px 14px !important;
+  width: auto !important;
+  margin-top: 0 !important;
+  text-decoration: none;
+  display: inline-block;
+}
+
 /* Dropzone */
 .plots-dropzone {
   border: 2px dashed var(--text-muted);

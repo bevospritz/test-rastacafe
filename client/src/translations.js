@@ -273,6 +273,7 @@ const translations = {
     loading: "Caricamento in corso...",
     dropFile: "Rilascia qui il file Excel.",
     clickToBrowse: "Trascina un file Excel o clicca per selezionarlo",
+    downloadTemplate: "Scarica modello Excel",
 
     // Gestione Utenti
     usersTitle: "Gestione Utenti",
@@ -586,6 +587,7 @@ const translations = {
     loading: "Carregando...",
     dropFile: "Solte o arquivo Excel aqui.",
     clickToBrowse: "Arraste um arquivo Excel ou clique para selecioná-lo",
+    downloadTemplate: "Baixar modelo Excel",
 
     // Gestione Utenti
     usersTitle: "Gestão de Usuários",

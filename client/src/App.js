@@ -35,8 +35,8 @@ const App = () => {
           <Route path="/dashboard/*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
             <Route index element={<DashboardAnalytics />} />
             <Route path="structure" element={<ManageFarm />} />
-            <Route path="gestione-struttura" element={<GestioneStruttura />} />
-            <Route path="gestione-appezzamenti" element={<PlotsManagement />} />
+            <Route path="farm-structure" element={<GestioneStruttura />} />
+            <Route path="plots-management" element={<PlotsManagement />} />
             <Route path="users" element={<Users />} />
             <Route path="traceability/*" element={<Traceability />}>
               <Route path="lots/:type" element={<LotsList />} />

@@ -122,10 +122,10 @@ const ManageFarm = () => {
           {/* Navigazione */}
           <div className="info-section-title">{t("manage")}</div>
           <div className="button-container" style={{ marginTop: "0.75rem" }}>
-            <button className="action-button" onClick={() => navigate("/dashboard/gestione-struttura")}>
+            <button className="action-button" onClick={() => navigate("/dashboard/farm-structure")}>
               {t("structure")}
             </button>
-            <button className="action-button" onClick={() => navigate("/dashboard/gestione-appezzamenti")}>
+            <button className="action-button" onClick={() => navigate("/dashboard/plots-management")}>
               {t("farmlands")}
             </button>
           </div>
