@@ -1,0 +1,79 @@
+/* Users.css */
+
+/* Wrapper input + bottone mostra/nascondi */
+.users-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.users-password-wrapper input {
+  flex: 1;
+  padding-right: 80px;
+  margin-bottom: 0;
+}
+
+.users-toggle-pw {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: color 0.15s;
+}
+
+.users-toggle-pw:hover {
+  color: var(--color-primary);
+}
+
+/* Barra forza password */
+.users-pw-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.users-pw-bar {
+  height: 4px;
+  border-radius: 2px;
+  flex: 1;
+  transition: background-color 0.2s, width 0.2s;
+}
+
+.users-pw-strength span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 50px;
+}
+
+.users-pw-weak .users-pw-bar   { background-color: var(--color-danger); width: 33%; }
+.users-pw-medium .users-pw-bar { background-color: #f59e0b; }
+.users-pw-strong .users-pw-bar { background-color: #16a34a; }
+
+.users-pw-weak span   { color: var(--color-danger); }
+.users-pw-medium span { color: #f59e0b; }
+.users-pw-strong span { color: #16a34a; }
+
+/* Messaggio di errore inline */
+.users-form-error {
+  background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+  color: var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Colonna username nella tabella */
+.users-table-username {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
